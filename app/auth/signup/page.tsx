@@ -10,15 +10,18 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
-import { signInWithEmail, signInWithGoogle } from "@/lib/auth"
+import { Mail, Lock, Eye, EyeOff, User, Phone, Loader2 } from "lucide-react"
+import { signUpWithEmail, signInWithGoogle } from "@/lib/auth"
 
-export default function SignInPage() {
+export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
+    phone: "",
     password: "",
+    confirmPassword: "",
   })
   const router = useRouter()
   const { toast } = useToast()
@@ -27,19 +30,46 @@ export default function SignInPage() {
     e.preventDefault()
     if (isLoading) return
 
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure both passwords are the same.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
-      await signInWithEmail(formData)
-      toast({
-        title: "Welcome back!",
-        description: "You have been signed in successfully.",
+      await signUpWithEmail({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        phone: formData.phone || undefined,
       })
-      router.push("/")
-    } catch (error) {
-      console.error("Sign in error:", error)
+      
       toast({
-        title: "Sign in failed",
-        description: error instanceof Error ? error.message : "Please check your credentials and try again.",
+        title: "Account created successfully!",
+        description: "Please check your email to verify your account before signing in.",
+      })
+      
+      router.push("/auth/signin?message=check_email")
+    } catch (error) {
+      console.error("Sign up error:", error)
+      toast({
+        title: "Sign up failed",
+        description: error instanceof Error ? error.message : "Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -80,15 +110,15 @@ export default function SignInPage() {
           </Link>
 
           <Badge className="bg-pink-100 text-pink-700 hover:bg-pink-200 rounded-full px-4 py-2 mb-4">
-            🔐 Welcome Back
+            🎉 Join Us
           </Badge>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Sign In</h1>
-          <p className="text-gray-600">Welcome back! Please sign in to your account.</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Create Account</h1>
+          <p className="text-gray-600">Join us and enjoy fresh baked goods!</p>
         </div>
 
         <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl rounded-2xl">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-bold text-gray-800">Sign in to your account</CardTitle>
+            <CardTitle className="text-xl font-bold text-gray-800">Create your account</CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-6">
@@ -129,12 +159,30 @@ export default function SignInPage() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">Or continue with email</span>
+                <span className="bg-white px-2 text-gray-500">Or create account with email</span>
               </div>
             </div>
 
-            {/* Email Sign In Form */}
+            {/* Email Sign Up Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+                  Full Name
+                </Label>
+                <div className="relative mt-1">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="pl-10 border-gray-200 focus:ring-pink-500 focus:border-pink-500 rounded-xl py-3"
+                    required
+                  />
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email Address
@@ -154,6 +202,23 @@ export default function SignInPage() {
               </div>
 
               <div>
+                <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+                  Phone Number (Optional)
+                </Label>
+                <div className="relative mt-1">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="Enter your phone number"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="pl-10 border-gray-200 focus:ring-pink-500 focus:border-pink-500 rounded-xl py-3"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                   Password
                 </Label>
@@ -162,7 +227,7 @@ export default function SignInPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="Create a password"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="pl-10 pr-10 border-gray-200 focus:ring-pink-500 focus:border-pink-500 rounded-xl py-3"
@@ -180,21 +245,22 @@ export default function SignInPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+              <div>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                  Confirm Password
+                </Label>
+                <div className="relative mt-1">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="pl-10 border-gray-200 focus:ring-pink-500 focus:border-pink-500 rounded-xl py-3"
+                    required
                   />
-                  <Label htmlFor="remember-me" className="ml-2 text-sm text-gray-700">
-                    Remember me
-                  </Label>
                 </div>
-                <Link href="/auth/forgot-password" className="text-sm text-pink-600 hover:text-pink-500">
-                  Forgot password?
-                </Link>
               </div>
 
               <Button
@@ -205,19 +271,19 @@ export default function SignInPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing In...
+                    Creating Account...
                   </>
                 ) : (
-                  "Sign In"
+                  "Create Account"
                 )}
               </Button>
             </form>
 
             <div className="text-center">
               <span className="text-sm text-gray-600">
-                Don't have an account?{" "}
-                <Link href="/auth/signup" className="text-pink-600 hover:text-pink-500 font-medium">
-                  Sign up
+                Already have an account?{" "}
+                <Link href="/auth/signin" className="text-pink-600 hover:text-pink-500 font-medium">
+                  Sign in
                 </Link>
               </span>
             </div>
@@ -226,7 +292,7 @@ export default function SignInPage() {
 
         <div className="text-center mt-6">
           <p className="text-xs text-gray-500">
-            By signing in, you agree to our{" "}
+            By creating an account, you agree to our{" "}
             <Link href="/terms" className="text-pink-600 hover:text-pink-500">
               Terms of Service
             </Link>{" "}
