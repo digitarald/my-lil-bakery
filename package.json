@@ -36,6 +36,7 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/supabase-js": "latest",
     "@testing-library/dom": "latest",
     "@testing-library/jest-dom": "latest",
