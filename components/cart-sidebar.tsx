@@ -1,96 +1,95 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { useCart } from "./cart-context"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Plus, Minus, Trash2, Calendar, Clock, User, Mail, Phone } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useCart } from "@/components/cart-context"
 import { createOrder } from "@/lib/database"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
+import { ShoppingCart, Plus, Minus, Trash2, CalendarIcon, Clock, User, Mail, Phone, MessageSquare } from "lucide-react"
+import { format } from "date-fns"
 
-type CartSidebarProps = {
-  /** Optional controlled open state passed from a parent */
+interface CartSidebarProps {
   isOpen?: boolean
-  /** Callback fired when the sheet closes (helpful for parent state sync) */
   onClose?: () => void
 }
 
-export function CartSidebar({ isOpen: isOpenProp, onClose }: CartSidebarProps) {
-  const {
-    items,
-    isOpen,
-    toggleCart,
-    closeCart,
-    updateQuantity,
-    removeItem,
-    clearCart,
-    getTotalPrice,
-    getTotalItems,
-    getMinOrderTime,
-  } = useCart()
-
-  // Allow external control while falling back to context state
-  const open = isOpenProp ?? isOpen
-
+export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
+  const { cartItems, updateQuantity, removeFromCart, clearCart, getCartTotal, getMinOrderTime } = useCart()
+  const { toast } = useToast()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    customerName: "",
-    customerEmail: "",
-    customerPhone: "",
-    pickupDate: "",
-    pickupTime: "",
+  const [showCheckout, setShowCheckout] = useState(false)
+  const [pickupDate, setPickupDate] = useState<Date>()
+  const [pickupTime, setPickupTime] = useState("")
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
     specialInstructions: "",
   })
 
-  // Ensure a valid positive number
-  const rawMinOrderTime = getMinOrderTime()
-  const minOrderTime = Number.isFinite(rawMinOrderTime) && rawMinOrderTime > 0 ? rawMinOrderTime : 2
-
+  const minOrderTime = getMinOrderTime()
   const minPickupDate = new Date()
-  minPickupDate.setHours(minPickupDate.getHours() + minOrderTime)
-
-  const handleQuantityChange = (id: number, newQuantity: number) => {
-    if (newQuantity < 1) {
-      removeItem(id)
-    } else {
-      updateQuantity(id, newQuantity)
-    }
+  if (minOrderTime > 0) {
+    minPickupDate.setHours(minPickupDate.getHours() + minOrderTime)
   }
 
-  const handleCheckout = () => {
-    if (items.length === 0) {
+  const timeSlots = [
+    "9:00 AM",
+    "9:30 AM",
+    "10:00 AM",
+    "10:30 AM",
+    "11:00 AM",
+    "11:30 AM",
+    "12:00 PM",
+    "12:30 PM",
+    "1:00 PM",
+    "1:30 PM",
+    "2:00 PM",
+    "2:30 PM",
+    "3:00 PM",
+    "3:30 PM",
+    "4:00 PM",
+    "4:30 PM",
+    "5:00 PM",
+    "5:30 PM",
+    "6:00 PM",
+    "6:30 PM",
+    "7:00 PM",
+    "7:30 PM",
+  ]
+
+  const handleCheckout = async () => {
+    if (!pickupDate || !pickupTime || !customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       toast({
-        title: "Cart is empty",
-        description: "Please add some items to your cart before checking out.",
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       })
       return
     }
+
     setIsCheckingOut(true)
-  }
-
-  const handleSubmitOrder = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
     try {
       const orderData = {
-        total_amount: getTotalPrice(),
-        pickup_date: formData.pickupDate,
-        pickup_time: formData.pickupTime,
-        customer_name: formData.customerName,
-        customer_email: formData.customerEmail,
-        customer_phone: formData.customerPhone,
-        special_instructions: formData.specialInstructions,
-        items: items.map((item) => ({
+        total_amount: getCartTotal(),
+        status: "pending" as const,
+        pickup_date: format(pickupDate, "yyyy-MM-dd"),
+        pickup_time: pickupTime,
+        customer_name: customerInfo.name,
+        customer_email: customerInfo.email,
+        customer_phone: customerInfo.phone,
+        special_instructions: customerInfo.specialInstructions || undefined,
+        items: cartItems.map((item) => ({
           product_id: item.id,
           quantity: item.quantity,
           price: item.price,
@@ -100,95 +99,79 @@ export function CartSidebar({ isOpen: isOpenProp, onClose }: CartSidebarProps) {
       await createOrder(orderData)
 
       toast({
-        title: "Order placed successfully!",
-        description: `Your order for $${getTotalPrice().toFixed(2)} has been placed. You'll receive a confirmation email shortly.`,
+        title: "Order Placed Successfully!",
+        description: "We'll contact you to confirm your order details.",
       })
 
       clearCart()
-      closeCart()
-      setIsCheckingOut(false)
-      setFormData({
-        customerName: "",
-        customerEmail: "",
-        customerPhone: "",
-        pickupDate: "",
-        pickupTime: "",
-        specialInstructions: "",
-      })
+      setShowCheckout(false)
+      onClose?.()
     } catch (error) {
-      console.error("Error placing order:", error)
+      console.error("Error creating order:", error)
       toast({
-        title: "Error placing order",
+        title: "Order Failed",
         description: "There was an error placing your order. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setIsSubmitting(false)
+      setIsCheckingOut(false)
     }
   }
 
   return (
-    <Sheet
-      open={open}
-      /* keep both internal toggle behaviour and notify parent */
-      onOpenChange={(value) => {
-        toggleCart()
-        if (!value) onClose?.()
-      }}
-    >
-      <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="relative bg-transparent">
-          <ShoppingCart className="h-4 w-4" />
-          {getTotalItems() > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-              {getTotalItems()}
-            </Badge>
-          )}
-        </Button>
-      </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-lg">
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
-            Your Cart ({getTotalItems()} items)
+            Your Cart ({cartItems.length})
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col h-full">
-          {!isCheckingOut ? (
+        <div className="mt-6 space-y-4">
+          {cartItems.length === 0 ? (
+            <div className="text-center py-12">
+              <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Your cart is empty</p>
+              <p className="text-sm text-gray-400">Add some delicious treats to get started!</p>
+            </div>
+          ) : (
             <>
               {/* Cart Items */}
-              <div className="flex-1 overflow-y-auto py-4">
-                {items.length === 0 ? (
-                  <div className="text-center py-8">
-                    <ShoppingCart className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-gray-500">Your cart is empty</p>
-                    <p className="text-sm text-gray-400 mt-2">Add some delicious treats to get started!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <img
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          className="w-16 h-16 object-cover rounded-md"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm">{item.name}</h4>
-                          <p className="text-pink-600 font-semibold">${item.price.toFixed(2)}</p>
-                          {item.preOrder && (
-                            <Badge variant="secondary" className="text-xs mt-1">
-                              Pre-order ({item.minOrderTime}h notice)
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
+              <div className="space-y-4">
+                {cartItems.map((item) => (
+                  <Card key={item.id} className="p-4">
+                    <div className="flex gap-4">
+                      <img
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.name}
+                        className="w-16 h-16 object-cover rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm">{item.name}</h3>
+                        <p className="text-pink-600 font-bold">${item.price}</p>
+                        {item.pre_order && (
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pre-order
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeFromCart(item.id)}
+                          className="h-6 w-6 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                        <div className="flex items-center gap-1">
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 bg-transparent"
-                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="h-6 w-6"
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -196,185 +179,183 @@ export function CartSidebar({ isOpen: isOpenProp, onClose }: CartSidebarProps) {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 bg-transparent"
-                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="h-6 w-6"
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
-                            onClick={() => removeItem(item.id)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <Separator />
+
+              {/* Order Summary */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total:</span>
+                  <span className="text-pink-600">${getCartTotal().toFixed(2)}</span>
+                </div>
+                {minOrderTime > 0 && (
+                  <p className="text-sm text-orange-600 flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    Minimum {minOrderTime} hours advance notice required
+                  </p>
                 )}
               </div>
 
-              {/* Cart Summary */}
-              {items.length > 0 && (
-                <div className="border-t pt-4 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold">Total:</span>
-                    <span className="text-xl font-bold text-pink-600">${getTotalPrice().toFixed(2)}</span>
-                  </div>
-
-                  {minOrderTime > 2 && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-800">
-                        <Clock className="inline h-4 w-4 mr-1" />
-                        Minimum {minOrderTime} hours notice required for pre-order items
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Button
-                      onClick={handleCheckout}
-                      className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                    >
-                      Proceed to Checkout
-                    </Button>
-                    <Button variant="outline" onClick={clearCart} className="w-full bg-transparent">
-                      Clear Cart
-                    </Button>
-                  </div>
+              {!showCheckout ? (
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowCheckout(true)}
+                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                  >
+                    Proceed to Checkout
+                  </Button>
+                  <Button variant="outline" onClick={clearCart} className="w-full bg-transparent">
+                    Clear Cart
+                  </Button>
                 </div>
+              ) : (
+                /* Checkout Form */
+                <Card className="p-4">
+                  <CardHeader className="p-0 mb-4">
+                    <CardTitle className="text-lg">Checkout Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 space-y-4">
+                    {/* Customer Information */}
+                    <div className="space-y-3">
+                      <div>
+                        <Label htmlFor="name" className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          Full Name *
+                        </Label>
+                        <Input
+                          id="name"
+                          value={customerInfo.name}
+                          onChange={(e) => setCustomerInfo((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="Enter your full name"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="email" className="flex items-center gap-1">
+                          <Mail className="h-4 w-4" />
+                          Email *
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={customerInfo.email}
+                          onChange={(e) => setCustomerInfo((prev) => ({ ...prev, email: e.target.value }))}
+                          placeholder="Enter your email"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone" className="flex items-center gap-1">
+                          <Phone className="h-4 w-4" />
+                          Phone *
+                        </Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={customerInfo.phone}
+                          onChange={(e) => setCustomerInfo((prev) => ({ ...prev, phone: e.target.value }))}
+                          placeholder="Enter your phone number"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pickup Date & Time */}
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="flex items-center gap-1">
+                          <CalendarIcon className="h-4 w-4" />
+                          Pickup Date *
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal bg-transparent"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {pickupDate ? format(pickupDate, "PPP") : "Select date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={pickupDate}
+                              onSelect={setPickupDate}
+                              disabled={(date) => {
+                                const today = new Date()
+                                today.setHours(0, 0, 0, 0)
+                                const minDate = new Date(minPickupDate)
+                                minDate.setHours(0, 0, 0, 0)
+                                return date < Math.max(today.getTime(), minDate.getTime())
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div>
+                        <Label className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          Pickup Time *
+                        </Label>
+                        <Select value={pickupTime} onValueChange={setPickupTime}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select time" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Special Instructions */}
+                    <div>
+                      <Label htmlFor="instructions" className="flex items-center gap-1">
+                        <MessageSquare className="h-4 w-4" />
+                        Special Instructions
+                      </Label>
+                      <Textarea
+                        id="instructions"
+                        value={customerInfo.specialInstructions}
+                        onChange={(e) => setCustomerInfo((prev) => ({ ...prev, specialInstructions: e.target.value }))}
+                        placeholder="Any special requests or dietary requirements..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="space-y-2 pt-4">
+                      <Button
+                        onClick={handleCheckout}
+                        disabled={isCheckingOut}
+                        className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                      >
+                        {isCheckingOut ? "Placing Order..." : `Place Order - $${getCartTotal().toFixed(2)}`}
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowCheckout(false)} className="w-full">
+                        Back to Cart
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </>
-          ) : (
-            /* Checkout Form */
-            <form onSubmit={handleSubmitOrder} className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto py-4 space-y-4">
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-pink-800 mb-2">Order Summary</h3>
-                  <div className="space-y-1 text-sm">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex justify-between">
-                        <span>
-                          {item.name} x{item.quantity}
-                        </span>
-                        <span>${(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-semibold">
-                    <span>Total:</span>
-                    <span>${getTotalPrice().toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="customerName" className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Full Name
-                    </Label>
-                    <Input
-                      id="customerName"
-                      value={formData.customerName}
-                      onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                      required
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customerEmail" className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      Email Address
-                    </Label>
-                    <Input
-                      id="customerEmail"
-                      type="email"
-                      value={formData.customerEmail}
-                      onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                      required
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="customerPhone" className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="customerPhone"
-                      type="tel"
-                      value={formData.customerPhone}
-                      onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                      required
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="pickupDate" className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Pickup Date
-                      </Label>
-                      <Input
-                        id="pickupDate"
-                        type="date"
-                        value={formData.pickupDate}
-                        onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                        min={minPickupDate.toISOString().split("T")[0]}
-                        required
-                        className="mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="pickupTime" className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Pickup Time
-                      </Label>
-                      <Input
-                        id="pickupTime"
-                        type="time"
-                        value={formData.pickupTime}
-                        onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
-                        required
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="specialInstructions">Special Instructions (Optional)</Label>
-                    <Textarea
-                      id="specialInstructions"
-                      value={formData.specialInstructions}
-                      onChange={(e) => setFormData({ ...formData, specialInstructions: e.target.value })}
-                      placeholder="Any special requests or dietary requirements..."
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t pt-4 space-y-2">
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                >
-                  {isSubmitting ? "Placing Order..." : `Place Order - $${getTotalPrice().toFixed(2)}`}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setIsCheckingOut(false)} className="w-full">
-                  Back to Cart
-                </Button>
-              </div>
-            </form>
           )}
         </div>
       </SheetContent>

@@ -2,16 +2,16 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { Toaster } from "@/components/ui/toaster"
+import { CartProvider } from "@/components/cart-context"
+import { SessionProvider } from "@/components/session-provider"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Sweet Dreams Bakery - Handcrafted Baked Goods & Pre-Orders",
-  description:
-    "Handcrafted with love, baked fresh daily. Pre-order your favorite treats and make every moment sweeter! Custom cakes, cupcakes, cookies, and more.",
-  keywords: "bakery, cakes, cupcakes, cookies, pre-order, custom cakes, fresh baked goods",
-  generator: "v0.dev",
+  title: "Sweet Dreams Bakery - Artisan Baked Goods",
+  description: "Delicious handcrafted cakes, pastries, and breads made with love",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -22,8 +22,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
-        <Toaster />
+        <SessionProvider>
+          <CartProvider>
+            {children}
+            <Toaster />
+          </CartProvider>
+        </SessionProvider>
       </body>
     </html>
   )

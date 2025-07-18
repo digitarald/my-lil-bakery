@@ -1,235 +1,232 @@
-import { supabase, type Product, type Order, type OrderWithItems, type User } from "./supabase"
+import { prisma } from "@/lib/prisma"
+import type { Product, Category, User } from "@prisma/client"
 
 // Product operations
-export async function getProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("in_stock", true)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching products:", error)
-    throw new Error("Failed to fetch products")
-  }
-
-  return data || []
+export async function getProducts() {
+  return await prisma.product.findMany({
+    include: {
+      category: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
 }
 
-export async function getAllProducts(): Promise<Product[]> {
-  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching all products:", error)
-    throw new Error("Failed to fetch products")
-  }
-
-  return data || []
+export async function getFeaturedProducts() {
+  return await prisma.product.findMany({
+    where: {
+      featured: true,
+      inStock: true,
+    },
+    include: {
+      category: true,
+    },
+    take: 6,
+  })
 }
 
-export async function getProductsByCategory(category: string): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("category", category)
-    .eq("in_stock", true)
-    .order("created_at", { ascending: false })
-
-  if (error) {
-    console.error("Error fetching products by category:", error)
-    throw new Error("Failed to fetch products")
-  }
-
-  return data || []
+export async function getProductById(id: string) {
+  return await prisma.product.findUnique({
+    where: { id },
+    include: {
+      category: true,
+    },
+  })
 }
 
-export async function searchProducts(query: string): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
-    .eq("in_stock", true)
-    .order("created_at", { ascending: false })
+export async function getProductsByCategory(categoryId: string) {
+  return await prisma.product.findMany({
+    where: {
+      categoryId,
+      inStock: true,
+    },
+    include: {
+      category: true,
+    },
+  })
+}
 
-  if (error) {
-    console.error("Error searching products:", error)
-    throw new Error("Failed to search products")
-  }
+// Category operations
+export async function getCategories() {
+  return await prisma.category.findMany({
+    include: {
+      _count: {
+        select: {
+          products: {
+            where: {
+              inStock: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+  })
+}
 
-  return data || []
+export async function getCategoryById(id: string) {
+  return await prisma.category.findUnique({
+    where: { id },
+    include: {
+      products: {
+        where: {
+          inStock: true,
+        },
+      },
+    },
+  })
 }
 
 // Order operations
 export async function createOrder(orderData: {
-  user_id?: string
-  total_amount: number
-  pickup_date: string
-  pickup_time: string
-  customer_name: string
-  customer_email: string
-  customer_phone: string
-  special_instructions?: string
+  userId: string
+  customerName: string
+  customerEmail: string
+  customerPhone?: string
+  deliveryAddress?: string
+  deliveryDate?: Date
+  notes?: string
   items: Array<{
-    product_id: number
+    productId: string
     quantity: number
     price: number
   }>
-}): Promise<Order> {
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
-    .insert({
-      user_id: orderData.user_id,
-      total_amount: orderData.total_amount,
-      pickup_date: orderData.pickup_date,
-      pickup_time: orderData.pickup_time,
-      customer_name: orderData.customer_name,
-      customer_email: orderData.customer_email,
-      customer_phone: orderData.customer_phone,
-      special_instructions: orderData.special_instructions,
-    })
-    .select()
-    .single()
+}) {
+  const total = orderData.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  if (orderError) {
-    console.error("Error creating order:", orderError)
-    throw new Error("Failed to create order")
-  }
-
-  // Insert order items
-  const orderItems = orderData.items.map((item) => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    price: item.price,
-  }))
-
-  const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
-
-  if (itemsError) {
-    console.error("Error creating order items:", itemsError)
-    throw new Error("Failed to create order items")
-  }
-
-  return order
+  return await prisma.order.create({
+    data: {
+      userId: orderData.userId,
+      customerName: orderData.customerName,
+      customerEmail: orderData.customerEmail,
+      customerPhone: orderData.customerPhone,
+      deliveryAddress: orderData.deliveryAddress,
+      deliveryDate: orderData.deliveryDate,
+      notes: orderData.notes,
+      total,
+      orderItems: {
+        create: orderData.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      },
+    },
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  })
 }
 
-export async function getOrders(userId?: string): Promise<OrderWithItems[]> {
-  let query = supabase
-    .from("orders")
-    .select(`
-      *,
-      order_items (
-        *,
-        products (*)
-      )
-    `)
-    .order("created_at", { ascending: false })
-
-  if (userId) {
-    query = query.eq("user_id", userId)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error("Error fetching orders:", error)
-    throw new Error("Failed to fetch orders")
-  }
-
-  return data || []
+export async function getOrdersByUser(userId: string) {
+  return await prisma.order.findMany({
+    where: { userId },
+    include: {
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
 }
 
-export async function updateOrderStatus(orderId: number, status: string): Promise<Order> {
-  const { data, error } = await supabase.from("orders").update({ status }).eq("id", orderId).select().single()
-
-  if (error) {
-    console.error("Error updating order status:", error)
-    throw new Error("Failed to update order status")
-  }
-
-  return data
+export async function getOrderById(id: string) {
+  return await prisma.order.findUnique({
+    where: { id },
+    include: {
+      user: true,
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  })
 }
 
-// Admin operations
-export async function getOrderStats() {
-  const { data: orders, error } = await supabase.from("orders").select("total_amount, status, created_at")
-
-  if (error) {
-    console.error("Error fetching order stats:", error)
-    throw new Error("Failed to fetch order statistics")
-  }
-
-  const today = new Date().toISOString().split("T")[0]
-  const thisMonth = new Date().toISOString().slice(0, 7)
-
-  const stats = {
-    totalOrders: orders?.length || 0,
-    todayOrders: orders?.filter((o) => o.created_at.startsWith(today)).length || 0,
-    monthlyRevenue:
-      orders?.filter((o) => o.created_at.startsWith(thisMonth)).reduce((sum, o) => sum + Number(o.total_amount), 0) ||
-      0,
-    pendingOrders: orders?.filter((o) => o.status === "pending").length || 0,
-  }
-
-  return stats
+export async function getAllOrders() {
+  return await prisma.order.findMany({
+    include: {
+      user: true,
+      orderItems: {
+        include: {
+          product: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
 }
 
-export async function addProduct(productData: Omit<Product, "id" | "created_at" | "updated_at">): Promise<Product> {
-  const { data, error } = await supabase.from("products").insert(productData).select().single()
-
-  if (error) {
-    console.error("Error adding product:", error)
-    throw new Error("Failed to add product")
-  }
-
-  return data
-}
-
-export async function updateProduct(id: number, productData: Partial<Product>): Promise<Product> {
-  const { data, error } = await supabase.from("products").update(productData).eq("id", id).select().single()
-
-  if (error) {
-    console.error("Error updating product:", error)
-    throw new Error("Failed to update product")
-  }
-
-  return data
-}
-
-export async function deleteProduct(id: number): Promise<void> {
-  const { error } = await supabase.from("products").delete().eq("id", id)
-
-  if (error) {
-    console.error("Error deleting product:", error)
-    throw new Error("Failed to delete product")
-  }
+export async function updateOrderStatus(orderId: string, status: string) {
+  return await prisma.order.update({
+    where: { id: orderId },
+    data: { status: status as any },
+  })
 }
 
 // User operations
-export async function getCurrentUser(): Promise<User | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return null
-
-  const { data, error } = await supabase.from("users").select("*").eq("id", user.id).single()
-
-  if (error) {
-    console.error("Error fetching user profile:", error)
-    return null
-  }
-
-  return data
+export async function getUserById(id: string) {
+  return await prisma.user.findUnique({
+    where: { id },
+  })
 }
 
-export async function updateUserProfile(userId: string, updates: Partial<User>): Promise<User> {
-  const { data, error } = await supabase.from("users").update(updates).eq("id", userId).select().single()
+export async function updateUser(id: string, data: Partial<User>) {
+  return await prisma.user.update({
+    where: { id },
+    data,
+  })
+}
 
-  if (error) {
-    console.error("Error updating user profile:", error)
-    throw new Error("Failed to update profile")
-  }
+// Admin operations
+export async function createProduct(productData: Omit<Product, "id" | "createdAt" | "updatedAt">) {
+  return await prisma.product.create({
+    data: productData,
+  })
+}
 
-  return data
+export async function updateProduct(id: string, productData: Partial<Product>) {
+  return await prisma.product.update({
+    where: { id },
+    data: productData,
+  })
+}
+
+export async function deleteProduct(id: string) {
+  return await prisma.product.delete({
+    where: { id },
+  })
+}
+
+export async function createCategory(categoryData: Omit<Category, "id" | "createdAt" | "updatedAt">) {
+  return await prisma.category.create({
+    data: categoryData,
+  })
+}
+
+export async function updateCategory(id: string, categoryData: Partial<Category>) {
+  return await prisma.category.update({
+    where: { id },
+    data: categoryData,
+  })
+}
+
+export async function deleteCategory(id: string) {
+  return await prisma.category.delete({
+    where: { id },
+  })
 }
