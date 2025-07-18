@@ -148,8 +148,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   const getMinOrderTime = () => {
-    if (state.items.length === 0) return 2
-    return Math.max(...state.items.map((item) => item.minOrderTime))
+    // Keep only valid numeric values
+    const times = state.items.map((item) => Number(item.minOrderTime)).filter((t) => Number.isFinite(t) && t > 0)
+
+    // Default to 2 hours if no valid times are found
+    return times.length ? Math.max(...times) : 2
   }
 
   return (

@@ -1,5 +1,6 @@
 "use client"
 
+import { CartProvider, useCart } from "@/components/cart-context"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,13 +15,16 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ShoppingCart, Search, Clock, CalendarIcon, Star, Heart, Filter } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { useCart } from "@/components/cart-context"
-import { CartSidebar } from "@/components/cart-sidebar"
 import { getProducts, searchProducts, createOrder } from "@/lib/database"
 import type { Product } from "@/lib/supabase"
 import { toast } from "@/hooks/use-toast"
+import { CartSidebar } from "@/components/cart-sidebar"
 
-export default function HomePage() {
+/*
+ * Presentational component – contains all UI logic
+ * MUST be rendered inside <CartProvider>
+ */
+function HomePageContent() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -541,5 +545,17 @@ export default function HomePage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+/*
+ * Page component exported to Next.js – wraps the above content
+ * with the required CartProvider context.
+ */
+export default function HomePage() {
+  return (
+    <CartProvider>
+      <HomePageContent />
+    </CartProvider>
   )
 }

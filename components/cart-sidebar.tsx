@@ -15,7 +15,14 @@ import { ShoppingCart, Plus, Minus, Trash2, Calendar, Clock, User, Mail, Phone }
 import { createOrder } from "@/lib/database"
 import { toast } from "@/hooks/use-toast"
 
-export function CartSidebar() {
+type CartSidebarProps = {
+  /** Optional controlled open state passed from a parent */
+  isOpen?: boolean
+  /** Callback fired when the sheet closes (helpful for parent state sync) */
+  onClose?: () => void
+}
+
+export function CartSidebar({ isOpen: isOpenProp, onClose }: CartSidebarProps) {
   const {
     items,
     isOpen,
@@ -28,6 +35,10 @@ export function CartSidebar() {
     getTotalItems,
     getMinOrderTime,
   } = useCart()
+
+  // Allow external control while falling back to context state
+  const open = isOpenProp ?? isOpen
+
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -39,7 +50,10 @@ export function CartSidebar() {
     specialInstructions: "",
   })
 
-  const minOrderTime = getMinOrderTime()
+  // Ensure a valid positive number
+  const rawMinOrderTime = getMinOrderTime()
+  const minOrderTime = Number.isFinite(rawMinOrderTime) && rawMinOrderTime > 0 ? rawMinOrderTime : 2
+
   const minPickupDate = new Date()
   minPickupDate.setHours(minPickupDate.getHours() + minOrderTime)
 
@@ -114,7 +128,14 @@ export function CartSidebar() {
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={toggleCart}>
+    <Sheet
+      open={open}
+      /* keep both internal toggle behaviour and notify parent */
+      onOpenChange={(value) => {
+        toggleCart()
+        if (!value) onClose?.()
+      }}
+    >
       <SheetTrigger asChild>
         <Button variant="outline" size="icon" className="relative bg-transparent">
           <ShoppingCart className="h-4 w-4" />
