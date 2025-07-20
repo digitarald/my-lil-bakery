@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,13 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart, Search, Filter, Star, Clock, MapPin, Phone, Mail, Heart, Award, Users, Cake } from "lucide-react"
 import { useCart } from "@/components/cart-context"
 import { CartSidebar } from "@/components/cart-sidebar"
-import { getProducts, type Product } from "@/lib/database"
-import AuthButton from "@/components/auth-button"
+import { getProducts, type ProductWithCategory } from "@/lib/database"
+import { AuthButton } from "@/components/auth-button";
+import { useSession } from "next-auth/react";
 
 export default function HomePage() {
   const { addToCart, cartItems, toggleCart, isCartOpen } = useCart()
-  const [products, setProducts] = useState<Product[]>([])
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const { data: session } = useSession()
+  const [products, setProducts] = useState<ProductWithCategory[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<ProductWithCategory[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
@@ -44,8 +47,10 @@ export default function HomePage() {
     const filtered = products.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
+        (product.description || "").toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesCategory =
+        selectedCategory === "all" ||
+        product.category.name.toLowerCase() === selectedCategory;
       return matchesSearch && matchesCategory
     })
 
@@ -65,10 +70,15 @@ export default function HomePage() {
     setFilteredProducts(filtered)
   }, [products, searchTerm, selectedCategory, sortBy])
 
-  const categories = ["all", ...Array.from(new Set(products.map((p) => p.category)))]
+  const categories = [
+    "all",
+    ...Array.from(new Set(products.map((p) => p.category.name.toLowerCase()))),
+  ];
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
-  const featuredProducts = products.filter((p) => p.category === "cakes").slice(0, 3)
+  const featuredProducts = products
+    .filter((p) => p.category.name.toLowerCase() === "cakes")
+    .slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50">
@@ -98,9 +108,11 @@ export default function HomePage() {
               <Link href="#contact" className="text-gray-700 hover:text-pink-600 transition-colors">
                 Contact
               </Link>
-              <Link href="/admin" className="text-gray-700 hover:text-pink-600 transition-colors">
-                Admin
-              </Link>
+              {(session?.user as any)?.role === "admin" && (
+                <Link href="/admin" className="text-gray-700 hover:text-pink-600 transition-colors">
+                  Admin
+                </Link>
+              )}
             </nav>
 
             <div className="flex items-center space-x-4">
@@ -190,12 +202,14 @@ export default function HomePage() {
                     className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                   >
                     <div className="relative overflow-hidden rounded-t-lg">
-                      <img
+                      <Image
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
+                        width={300}
+                        height={300}
                         className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      {product.pre_order && (
+                      {product.preOrder && (
                         <Badge className="absolute top-3 left-3 bg-purple-500 text-white">Pre-Order</Badge>
                       )}
                       <Button
@@ -296,15 +310,17 @@ export default function HomePage() {
                   className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
                 >
                   <div className="relative overflow-hidden rounded-t-lg">
-                    <img
+                    <Image
                       src={product.image || "/placeholder.svg"}
                       alt={product.name}
+                      width={300}
+                      height={300}
                       className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    {product.pre_order && (
+                    {product.preOrder && (
                       <Badge className="absolute top-2 left-2 bg-purple-500 text-white text-xs">Pre-Order</Badge>
                     )}
-                    {!product.in_stock && (
+                    {!product.inStock && (
                       <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">Out of Stock</Badge>
                     )}
                     <Button
@@ -323,16 +339,16 @@ export default function HomePage() {
                       <Button
                         onClick={() => addToCart(product)}
                         size="sm"
-                        disabled={!product.in_stock}
+                        disabled={!product.inStock}
                         className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50"
                       >
-                        {product.in_stock ? "Add to Cart" : "Out of Stock"}
+                        {product.inStock ? "Add to Cart" : "Out of Stock"}
                       </Button>
                     </div>
-                    {product.pre_order && (
+                    {product.preOrder && (
                       <p className="text-xs text-purple-600 mt-2 flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
-                        Min {product.min_order_time}h notice required
+                        Min {product.minOrderTime}h notice required
                       </p>
                     )}
                   </CardContent>
@@ -357,7 +373,7 @@ export default function HomePage() {
                 Every item is handcrafted with premium ingredients and baked fresh daily in our kitchen.
               </p>
               <p className="text-gray-600 mb-8 leading-relaxed">
-                From custom celebration cakes to daily fresh pastries, we're committed to making your sweet dreams come
+                From custom celebration cakes to daily fresh pastries, we&apos;re committed to making your sweet dreams come
                 true with every bite.
               </p>
 
@@ -387,7 +403,7 @@ export default function HomePage() {
             </div>
 
             <div className="relative">
-              <img src="/placeholder.svg?height=500&width=500" alt="Baker at work" className="rounded-2xl shadow-2xl" />
+              <Image src="/placeholder.svg?height=500&width=500" alt="Baker at work" width={500} height={500} className="rounded-2xl shadow-2xl" />
               <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-xl shadow-lg">
                 <div className="flex items-center space-x-3">
                   <div className="flex -space-x-2">
@@ -452,7 +468,7 @@ export default function HomePage() {
               <p className="text-gray-600 text-sm">
                 hello@sweetdreamsbakery.com
                 <br />
-                We'll respond within 24hrs
+                We&apos;ll respond within 24hrs
               </p>
             </Card>
           </div>

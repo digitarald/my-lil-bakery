@@ -1,12 +1,14 @@
-import type { NextAuthOptions } from "next-auth"
+import NextAuth from "next-auth/next"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import GoogleProvider from "next-auth/providers/google"
 import EmailProvider from "next-auth/providers/email"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { resend } from "@/lib/resend"
+import { verifyPassword } from "@/lib/password"
+import type { JWT } from "next-auth/jwt"
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: any = {
   adapter: PrismaAdapter(prisma) as any,
   providers: [
     GoogleProvider({
@@ -72,8 +74,33 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // For demo purposes, we'll skip password hashing
-        // In production, you'd compare with bcrypt
+        // Special case for test admin account in local development
+        if (
+          user.email === "test.admin@localhost.dev" &&
+          credentials.password === "admin123" &&
+          process.env.NODE_ENV === "development"
+        ) {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.image,
+            role: user.role,
+          }
+        }
+
+        // Check if user has a password (credential-based account)
+        if (!user.password) {
+          console.warn(`User ${user.email} attempted credential login but has no password set`)
+          return null
+        }
+
+        // Verify password using bcrypt
+        const isPasswordValid = await verifyPassword(credentials.password, user.password)
+        if (!isPasswordValid) {
+          return null
+        }
+        
         return {
           id: user.id,
           email: user.email,
@@ -85,18 +112,18 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user?: any }) {
       if (user) {
         token.role = user.role || "customer"
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: JWT }) {
       if (token) {
-        session.user.id = token.sub!
+        session.user.id = token.sub || ""
         session.user.role = token.role as string
       }
       return session
@@ -107,3 +134,5 @@ export const authOptions: NextAuthOptions = {
     signUp: "/auth/signup",
   },
 }
+
+export const handler = NextAuth(authOptions)

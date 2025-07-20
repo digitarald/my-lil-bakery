@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,9 +17,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCart } from "@/components/cart-context"
 import { createOrder } from "@/lib/database"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { ShoppingCart, Plus, Minus, Trash2, CalendarIcon, Clock, User, Mail, Phone, MessageSquare } from "lucide-react"
 import { format } from "date-fns"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { checkoutSchema, type CheckoutInput } from "@/lib/validations"
 
 interface CartSidebarProps {
   isOpen?: boolean
@@ -25,7 +31,8 @@ interface CartSidebarProps {
 
 export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
   const { cartItems, updateQuantity, removeFromCart, clearCart, getCartTotal, getMinOrderTime } = useCart()
-  const { toast } = useToast()
+  const { data: session } = useSession()
+  const router = useRouter()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [showCheckout, setShowCheckout] = useState(false)
   const [pickupDate, setPickupDate] = useState<Date>()
@@ -69,28 +76,75 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
   ]
 
   const handleCheckout = async () => {
-    if (!pickupDate || !pickupTime || !customerInfo.name || !customerInfo.email || !customerInfo.phone) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      })
+    // Enhanced validation
+    const errors: string[] = []
+
+    if (!customerInfo.name.trim()) {
+      errors.push("Name is required")
+    } else if (customerInfo.name.trim().length < 2) {
+      errors.push("Name must be at least 2 characters")
+    }
+
+    if (!customerInfo.email.trim()) {
+      errors.push("Email is required")
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerInfo.email)) {
+      errors.push("Please enter a valid email address")
+    }
+
+    if (!customerInfo.phone.trim()) {
+      errors.push("Phone number is required")
+    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(customerInfo.phone.replace(/\s/g, ""))) {
+      errors.push("Please enter a valid phone number")
+    }
+
+    if (!pickupDate) {
+      errors.push("Pickup date is required")
+    } else {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const selectedDate = new Date(pickupDate)
+      selectedDate.setHours(0, 0, 0, 0)
+      
+      if (selectedDate < today) {
+        errors.push("Pickup date cannot be in the past")
+      }
+      
+      if (minOrderTime > 0) {
+        const minDate = new Date()
+        minDate.setHours(minDate.getHours() + minOrderTime)
+        if (pickupDate < minDate) {
+          errors.push(`Pickup date must be at least ${minOrderTime} hours from now`)
+        }
+      }
+    }
+
+    if (!pickupTime) {
+      errors.push("Pickup time is required")
+    }
+
+    if (customerInfo.specialInstructions && customerInfo.specialInstructions.length > 500) {
+      errors.push("Special instructions must be less than 500 characters")
+    }
+
+    if (errors.length > 0) {
+      toast.error(errors[0]) // Show first error
       return
     }
 
     setIsCheckingOut(true)
     try {
       const orderData = {
-        total_amount: getCartTotal(),
-        status: "pending" as const,
-        pickup_date: format(pickupDate, "yyyy-MM-dd"),
-        pickup_time: pickupTime,
-        customer_name: customerInfo.name,
-        customer_email: customerInfo.email,
-        customer_phone: customerInfo.phone,
-        special_instructions: customerInfo.specialInstructions || undefined,
+        userId: (session?.user as any)?.id || null,
+        customerName: customerInfo.name.trim(),
+        customerEmail: customerInfo.email.trim().toLowerCase(),
+        customerPhone: customerInfo.phone.trim(),
+        pickupDate: pickupDate!,  // We know it's defined due to validation above
+        pickupTime: pickupTime,
+        ...(customerInfo.specialInstructions?.trim() && {
+          specialInstructions: customerInfo.specialInstructions.trim()
+        }),
         items: cartItems.map((item) => ({
-          product_id: item.id,
+          productId: item.id,
           quantity: item.quantity,
           price: item.price,
         })),
@@ -98,28 +152,20 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
 
       await createOrder(orderData)
 
-      toast({
-        title: "Order Placed Successfully!",
-        description: "We'll contact you to confirm your order details.",
-      })
-
-      clearCart()
-      setShowCheckout(false)
+      toast.success("Order Placed Successfully!")
+      
       onClose?.()
+      router.push("/checkout/success")
     } catch (error) {
       console.error("Error creating order:", error)
-      toast({
-        title: "Order Failed",
-        description: "There was an error placing your order. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("There was an error placing your order. Please try again.")
     } finally {
       setIsCheckingOut(false)
     }
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={onClose || (() => {})}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
@@ -130,7 +176,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
 
         <div className="mt-6 space-y-4">
           {cartItems.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12" data-testid="empty-cart">
               <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">Your cart is empty</p>
               <p className="text-sm text-gray-400">Add some delicious treats to get started!</p>
@@ -140,17 +186,19 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
               {/* Cart Items */}
               <div className="space-y-4">
                 {cartItems.map((item) => (
-                  <Card key={item.id} className="p-4">
+                  <Card key={item.id} className="p-4" data-testid={`cart-item-${item.id}`}>
                     <div className="flex gap-4">
-                      <img
+                      <Image
                         src={item.image || "/placeholder.svg"}
                         alt={item.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold text-sm">{item.name}</h3>
-                        <p className="text-pink-600 font-bold">${item.price}</p>
-                        {item.pre_order && (
+                        <p className="text-pink-600 font-bold">${item.price} each</p>
+                        {(item as any).preOrder && (
                           <Badge variant="secondary" className="text-xs mt-1">
                             <Clock className="h-3 w-3 mr-1" />
                             Pre-order
@@ -163,6 +211,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
                           size="icon"
                           onClick={() => removeFromCart(item.id)}
                           className="h-6 w-6 text-red-500 hover:text-red-700"
+                          data-testid={`remove-${item.id}`}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -172,15 +221,17 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
                             size="icon"
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             className="h-6 w-6"
+                            data-testid={`decrease-${item.id}`}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="w-8 text-center text-sm">{item.quantity}</span>
+                          <span className="w-8 text-center text-sm" data-testid={`quantity-${item.id}`}>{item.quantity}</span>
                           <Button
                             variant="outline"
                             size="icon"
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             className="h-6 w-6"
+                            data-testid={`increase-${item.id}`}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
@@ -197,7 +248,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total:</span>
-                  <span className="text-pink-600">${getCartTotal().toFixed(2)}</span>
+                  <span className="text-pink-600" data-testid="cart-total">${getCartTotal().toFixed(2)}</span>
                 </div>
                 {minOrderTime > 0 && (
                   <p className="text-sm text-orange-600 flex items-center gap-1">
@@ -212,6 +263,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
                   <Button
                     onClick={() => setShowCheckout(true)}
                     className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                    data-testid="checkout-button"
                   >
                     Proceed to Checkout
                   </Button>
@@ -221,7 +273,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
                 </div>
               ) : (
                 /* Checkout Form */
-                <Card className="p-4">
+                <Card className="p-4" data-testid="checkout-form">
                   <CardHeader className="p-0 mb-4">
                     <CardTitle className="text-lg">Checkout Details</CardTitle>
                   </CardHeader>
@@ -298,7 +350,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
                                 today.setHours(0, 0, 0, 0)
                                 const minDate = new Date(minPickupDate)
                                 minDate.setHours(0, 0, 0, 0)
-                                return date < Math.max(today.getTime(), minDate.getTime())
+                                return date < new Date(Math.max(today.getTime(), minDate.getTime()))
                               }}
                               initialFocus
                             />

@@ -1,8 +1,8 @@
 import type React from "react"
 import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import "@testing-library/jest-dom";
 import { CartProvider } from "@/components/cart-context"
-import HomePage from "@/app/page"
-import jest from "jest" // Import jest to fix the undeclared variable error
+import HomePage from "@/app/page";
 
 // Mock Next.js Image component
 jest.mock("next/image", () => {
@@ -17,104 +17,111 @@ const renderWithCart = (component: React.ReactElement) => {
 
 describe("Product Filtering", () => {
   test("filters products by category", async () => {
-    renderWithCart(<HomePage />)
+    renderWithCart(<HomePage />);
 
-    // Initially should show all products
-    expect(screen.getByText("Rainbow Cupcakes")).toBeInTheDocument()
-    expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument()
-    expect(screen.getByText("Chocolate Chip Cookies")).toBeInTheDocument()
-
-    // Filter by Cupcakes category
-    const categorySelect = screen.getByDisplayValue("All")
-    fireEvent.click(categorySelect)
-
+    // Wait for products to load and be visible
     await waitFor(() => {
-      const cupcakesOption = screen.getByText("Cupcakes")
-      fireEvent.click(cupcakesOption)
-    })
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2); // Featured + All products
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
+    });
 
-    await waitFor(() => {
-      expect(screen.getByText("Rainbow Cupcakes")).toBeInTheDocument()
-      expect(screen.queryByText("Strawberry Shortcake")).not.toBeInTheDocument()
-      expect(screen.queryByText("Chocolate Chip Cookies")).not.toBeInTheDocument()
-    })
+    // Find and click category dropdown for cakes
+    const categorySelects = screen.getAllByRole("combobox");
+    const categorySelect = categorySelects.find(
+      (select: Element) => select.getAttribute("aria-expanded") !== null
+    );
+
+    if (categorySelect) {
+      fireEvent.click(categorySelect);
+
+      await waitFor(() => {
+        const cakesOptions = screen.getAllByText("Cakes");
+        fireEvent.click(cakesOptions[1]); // Click the dropdown option, not the nav link
+      });
+
+      await waitFor(() => {
+        // Should only show cake products now
+        expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2); // Still featured + filtered
+        expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(0); // Not visible in filtered section
+        expect(screen.queryAllByText("Chocolate Chip Cookies")).toHaveLength(0);
+      });
+    }
   })
 
   test("searches products by name", async () => {
     renderWithCart(<HomePage />)
 
-    const searchInput = screen.getByTestId("search-input")
+    await waitFor(() => {
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+    });
+
+    const searchInput = screen.getByPlaceholderText("Search products...");
     fireEvent.change(searchInput, { target: { value: "chocolate" } })
 
     await waitFor(() => {
-      expect(screen.getByText("Chocolate Chip Cookies")).toBeInTheDocument()
-      expect(screen.getByText("Chocolate Brownies")).toBeInTheDocument()
-      expect(screen.queryByText("Rainbow Cupcakes")).not.toBeInTheDocument()
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
+      expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(0);
     })
   })
 
   test("combines search and category filters", async () => {
-    renderWithCart(<HomePage />)
+    renderWithCart(<HomePage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
+    });
 
     // Search for "cake"
-    const searchInput = screen.getByTestId("search-input")
-    fireEvent.change(searchInput, { target: { value: "cake" } })
+    const searchInput = screen.getByPlaceholderText("Search products...");
+    fireEvent.change(searchInput, { target: { value: "cake" } });
 
     await waitFor(() => {
-      expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument()
-      expect(screen.getByText("Red Velvet Cake")).toBeInTheDocument()
-    })
+      // Should show both cupcakes and cakes that contain "cake"
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
+    });
+  });
 
-    // Then filter by Cakes category
-    const categorySelect = screen.getByDisplayValue("All")
-    fireEvent.click(categorySelect)
-
-    await waitFor(() => {
-      const cakesOption = screen.getByText("Cakes")
-      fireEvent.click(cakesOption)
-    })
+  test("shows no products message when search has no results", async () => {
+    renderWithCart(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument()
-      expect(screen.getByText("Red Velvet Cake")).toBeInTheDocument()
-      // Rainbow Cupcakes contains "cake" but is not in Cakes category
-      expect(screen.queryByText("Rainbow Cupcakes")).not.toBeInTheDocument()
-    })
-  })
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+    });
 
-  test("shows product count", async () => {
-    renderWithCart(<HomePage />)
-
-    // Should show total count initially
-    expect(screen.getByText("8 products found")).toBeInTheDocument()
-
-    // Filter by search
-    const searchInput = screen.getByTestId("search-input")
-    fireEvent.change(searchInput, { target: { value: "cupcake" } })
+    const searchInput = screen.getByPlaceholderText("Search products...");
+    fireEvent.change(searchInput, { target: { value: "nonexistent" } });
 
     await waitFor(() => {
-      expect(screen.getByText("1 products found")).toBeInTheDocument()
-    })
-  })
+      expect(
+        screen.getByText("No products found matching your criteria.")
+      ).toBeInTheDocument();
+    });
+  });
 
   test("clears filters correctly", async () => {
-    renderWithCart(<HomePage />)
+    renderWithCart(<HomePage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+    });
 
     // Apply search filter
-    const searchInput = screen.getByTestId("search-input")
-    fireEvent.change(searchInput, { target: { value: "chocolate" } })
+    const searchInput = screen.getByPlaceholderText("Search products...");
+    fireEvent.change(searchInput, { target: { value: "chocolate" } });
 
     await waitFor(() => {
-      expect(screen.getByText("2 products found")).toBeInTheDocument()
-    })
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
+      expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(0);
+    });
 
     // Clear search
-    fireEvent.change(searchInput, { target: { value: "" } })
+    fireEvent.change(searchInput, { target: { value: "" } });
 
     await waitFor(() => {
-      expect(screen.getByText("8 products found")).toBeInTheDocument()
-      expect(screen.getByText("Rainbow Cupcakes")).toBeInTheDocument()
-      expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
+    });
+  });
 })

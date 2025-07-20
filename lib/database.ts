@@ -1,5 +1,29 @@
 import { prisma } from "@/lib/prisma"
-import type { Product, Category, User } from "@prisma/client"
+import type { Product, Category, User, Order, OrderItem } from "@prisma/client"
+
+// Re-export Prisma types
+export type { Product, Category, User, Order, OrderItem } from "@prisma/client"
+
+// Type exports
+export type ProductWithCategory = Product & {
+  category: Category;
+};
+
+export type OrderWithItems = Order & {
+  orderItems: (OrderItem & {
+    product: Product;
+  })[];
+  user: {
+    name: string | null;
+    email: string;
+  } | null;
+};
+
+export interface OrderStats {
+  totalOrders: number;
+  totalRevenue: number;
+  pendingOrders: number;
+}
 
 // Product operations
 export async function getProducts() {
@@ -82,13 +106,14 @@ export async function getCategoryById(id: string) {
 
 // Order operations
 export async function createOrder(orderData: {
-  userId: string
+  userId?: string | null
   customerName: string
   customerEmail: string
   customerPhone?: string
   deliveryAddress?: string
-  deliveryDate?: Date
-  notes?: string
+  pickupDate?: Date
+  pickupTime?: string
+  specialInstructions?: string
   items: Array<{
     productId: string
     quantity: number
@@ -104,8 +129,9 @@ export async function createOrder(orderData: {
       customerEmail: orderData.customerEmail,
       customerPhone: orderData.customerPhone,
       deliveryAddress: orderData.deliveryAddress,
-      deliveryDate: orderData.deliveryDate,
-      notes: orderData.notes,
+      pickupDate: orderData.pickupDate,
+      pickupTime: orderData.pickupTime,
+      specialInstructions: orderData.specialInstructions,
       total,
       orderItems: {
         create: orderData.items.map((item) => ({
@@ -230,3 +256,40 @@ export async function deleteCategory(id: string) {
     where: { id },
   })
 }
+
+// Admin helper functions
+export async function getAllProducts() {
+  return await prisma.product.findMany({
+    include: {
+      category: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
+}
+
+export async function getOrders() {
+  return await getAllOrders()
+}
+
+export async function getOrderStats(): Promise<OrderStats> {
+  const totalOrders = await prisma.order.count()
+  const totalRevenue = await prisma.order.aggregate({
+    _sum: {
+      total: true,
+    },
+  })
+  const pendingOrders = await prisma.order.count({
+    where: {
+      status: "PENDING",
+    },
+  })
+
+  return {
+    totalOrders,
+    totalRevenue: totalRevenue._sum.total || 0,
+    pendingOrders,
+  }
+}
+

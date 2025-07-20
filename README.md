@@ -1,30 +1,86 @@
-# Modern e-commerce platform
+# Sweet Dreams Bakery
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+A modern bakery e-commerce application built with Next.js, Prisma, and TypeScript.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/harald-kirschners-projects/v0-modern-e-commerce-platform)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/aY4oUXdWfim)
+## Tech Stack
 
-## Overview
+- **Frontend**: Next.js 15 with TypeScript
+- **Database**: Prisma ORM with SQLite (dev) / PostgreSQL (production)
+- **Authentication**: NextAuth.js
+- **Styling**: Tailwind CSS with Radix UI components
+- **Testing**: Jest with React Testing Library
 
-This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
+## Getting Started
 
-## Deployment
+### Prerequisites
 
-Your project is live at:
+- Node.js 18+
+- pnpm (recommended)
 
-**[https://vercel.com/harald-kirschners-projects/v0-modern-e-commerce-platform](https://vercel.com/harald-kirschners-projects/v0-modern-e-commerce-platform)**
+### Installation
 
-## Build your app
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-Continue building your app on:
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+   Update the `.env` file with your configuration.
 
-**[https://v0.dev/chat/projects/aY4oUXdWfim](https://v0.dev/chat/projects/aY4oUXdWfim)**
+4. Set up the database:
+   ```bash
+   pnpm db:generate  # Generate Prisma client
+   pnpm db:migrate   # Create database schema
+   pnpm db:seed      # Populate with sample data
+   ```
 
-## How It Works
+5. Start the development server:
+   ```bash
+   pnpm dev
+   ```
 
-1. Create and modify your project using [v0.dev](https://v0.dev)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+The application will be available at `http://localhost:3000`.
+
+## Database Management
+
+- **Generate Prisma client**: `pnpm db:generate`
+- **Create new migration**: `pnpm db:migrate`
+- **Seed database**: `pnpm db:seed`
+- **View database**: `pnpm db:studio`
+
+## Testing
+
+- Run all tests: `pnpm test`
+- Run tests in watch mode: `pnpm test:watch`
+
+## Project Structure
+
+- `/app` - Next.js app router pages and API routes
+- `/components` - Reusable React components
+- `/lib` - Utility functions and database operations
+- `/prisma` - Database schema and seed data
+- `/hooks` - Custom React hooks
+- `/__tests__` - Test files
+
+## Features
+
+- Product catalog with categories
+- Shopping cart functionality
+- User authentication and profiles
+- Order management system
+- Admin dashboard for product/order management
+- Responsive design for all devices
+
+## Seed Data
+
+The application comes with pre-populated seed data including:
+
+- **4 Categories**: Cakes, Pastries, Bread, Cookies
+- **10 Sample Products**: Various bakery items with pricing and details
+- **Admin User**: admin@sweetdreamsbakery.com (you'll need to update the role after signup)
+
+The seed uses the TypeScript Prisma seed file at `prisma/seed.ts`.

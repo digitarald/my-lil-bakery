@@ -71,7 +71,7 @@ export function AuthButton() {
             <span>My Orders</span>
           </Link>
         </DropdownMenuItem>
-        {session.user?.role === "admin" && (
+        {(session.user as any)?.role === "admin" && (
           <DropdownMenuItem asChild>
             <Link href="/admin" className="flex items-center">
               <Settings className="mr-2 h-4 w-4" />

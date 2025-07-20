@@ -1,68 +1,86 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { render, screen, fireEvent } from "@testing-library/react"
 import AdminDashboard from "@/app/admin/page"
+import { useSession } from "next-auth/react"
+
+// Mock modules need to be redefined for this test
+jest.mock("next-auth/react", () => ({
+  useSession: jest.fn(),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
+}))
+
+// Type the mock
+const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
+
+// Set up the mock for all tests in this file
+beforeEach(() => {
+  mockUseSession.mockReturnValue({
+    data: {
+      user: { 
+        id: "admin-user", 
+        email: "admin@bakery.com", 
+        role: "admin" 
+      } as any,
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    },
+    status: "authenticated",
+    update: jest.fn() as any,
+  })
+})
+
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    pathname: "/admin",
+    query: {},
+    asPath: "/admin",
+  })),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
+  usePathname: jest.fn(() => "/admin"),
+}))
 
 describe("AdminDashboard", () => {
-  test("renders dashboard stats", () => {
+  test("renders dashboard stats", async () => {
+    render(<AdminDashboard />);
+
+    // Check that admin dashboard title appears
+    expect(await screen.findByText("Admin Dashboard", {}, { timeout: 3000 })).toBeInTheDocument();
+
+    // Check for stats
+    expect(await screen.findByText("Total Orders")).toBeInTheDocument();
+    expect(screen.getByText("10")).toBeInTheDocument(); // totalOrders from mock
+    expect(screen.getByText("Pending Orders")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument(); // pendingOrders from mock
+    expect(screen.getByText("Total Revenue")).toBeInTheDocument();
+    expect(screen.getByText("$250.00")).toBeInTheDocument(); // totalRevenue from mock
+  });
+
+  test("shows products table", async () => {
+    render(<AdminDashboard />);
+
+    // Wait for content to load
+    expect(await screen.findByText("Admin Dashboard", {}, { timeout: 3000 })).toBeInTheDocument();
+
+    // Check that products are displayed
+    expect(await screen.findByText("Rainbow Cupcakes")).toBeInTheDocument();
+    expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument();
+    expect(screen.getByText("Chocolate Chip Cookies")).toBeInTheDocument();
+  });
+
+
+  test("can open add product dialog", async () => {
     render(<AdminDashboard />)
 
-    expect(screen.getByText("Total Products")).toBeInTheDocument()
-    expect(screen.getByText("48")).toBeInTheDocument()
-    expect(screen.getByText("Pending Orders")).toBeInTheDocument()
-    expect(screen.getByText("12")).toBeInTheDocument()
-    expect(screen.getByText("Total Customers")).toBeInTheDocument()
-    expect(screen.getByText("324")).toBeInTheDocument()
-  })
+    // Wait for content to load
+    expect(await screen.findByText("Admin Dashboard", {}, { timeout: 3000 })).toBeInTheDocument();
 
-  test("shows products table", () => {
-    render(<AdminDashboard />)
+    // Look for the Add Product button with Plus icon
+    const addProductButton = screen.getByRole('button', { name: /add product/i });
+    fireEvent.click(addProductButton);
 
-    expect(screen.getByText("Product Inventory")).toBeInTheDocument()
-    expect(screen.getByText("Rainbow Cupcakes")).toBeInTheDocument()
-    expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument()
-    expect(screen.getByText("Chocolate Chip Cookies")).toBeInTheDocument()
-  })
-
-  test("can switch between tabs", async () => {
-    render(<AdminDashboard />)
-
-    // Click on Orders tab
-    fireEvent.click(screen.getByText("Orders"))
-
-    await waitFor(() => {
-      expect(screen.getByText("Order Management")).toBeInTheDocument()
-      expect(screen.getByText("ORD-001")).toBeInTheDocument()
-    })
-
-    // Click on Add Product tab
-    fireEvent.click(screen.getByText("Add Product"))
-
-    await waitFor(() => {
-      expect(screen.getByText("Add New Product")).toBeInTheDocument()
-      expect(screen.getByPlaceholderText("Enter product name")).toBeInTheDocument()
-    })
-  })
-
-  test("can add new product", async () => {
-    render(<AdminDashboard />)
-
-    // Switch to Add Product tab
-    fireEvent.click(screen.getByText("Add Product"))
-
-    await waitFor(() => {
-      // Fill out form
-      fireEvent.change(screen.getByPlaceholderText("Enter product name"), {
-        target: { value: "Test Product" },
-      })
-      fireEvent.change(screen.getByPlaceholderText("0.00"), {
-        target: { value: "29.99" },
-      })
-      fireEvent.change(screen.getByPlaceholderText("0"), {
-        target: { value: "10" },
-      })
-
-      // Submit form
-      const submitButton = screen.getByText("Add Product")
-      fireEvent.click(submitButton)
-    })
+    // Check that the dialog opens
+    expect(await screen.findByText("Add New Product")).toBeInTheDocument();
   })
 })

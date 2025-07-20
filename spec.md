@@ -70,8 +70,8 @@ To create a delightful digital experience that connects customers with high-qual
 - **Frontend**: Next.js 15 with App Router, React 19, TypeScript
 - **Styling**: Tailwind CSS with custom design system
 - **UI Components**: shadcn/ui component library
-- **Database**: Supabase (PostgreSQL) with Row Level Security
-- **Authentication**: Supabase Auth with OAuth providers
+- **Database**: Prisma with SQLite for development, PostgreSQL for production
+- **Authentication**: NextAuth.js with OAuth providers
 - **State Management**: React Context API for cart management
 - **Icons**: Lucide React icon library
 
@@ -79,7 +79,7 @@ To create a delightful digital experience that connects customers with high-qual
 
 #### 3.2.1 Core Tables
 \`\`\`sql
--- Users table (extends Supabase auth)
+-- Users table (managed by NextAuth.js)
 users (id, email, name, phone, role, created_at, updated_at)
 
 -- Products table
@@ -186,8 +186,8 @@ order_items (id, order_id, product_id, quantity, price, created_at)
 ## 8. Integration Requirements
 
 ### 8.1 Current Integrations
-- **Supabase**: Database and authentication
-- **Email Service**: Order confirmations (via Supabase)
+- **Prisma**: Database ORM and migrations
+- **Email Service**: Order confirmations (via Resend or similar)
 - **Image Storage**: Product photos and assets
 
 ### 8.2 Future Integrations
@@ -242,7 +242,7 @@ order_items (id, order_id, product_id, quantity, price, created_at)
 
 ### 12.1 Technical Risks
 - **Database Performance**: High load during peak times
-- **Third-Party Dependencies**: Supabase service availability
+- **Third-Party Dependencies**: External email service availability
 - **Security Vulnerabilities**: Data breach prevention
 - **Browser Compatibility**: Cross-browser functionality
 

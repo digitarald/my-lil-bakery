@@ -45,6 +45,7 @@ model User {
   emailVerified DateTime?
   image         String?
   phone         String?
+  password      String?   // Optional for OAuth users
   role          String    @default("customer")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -83,6 +84,8 @@ model Product {
   categoryId  String
   inStock     Boolean  @default(true)
   featured    Boolean  @default(false)
+  preOrder    Boolean  @default(false)
+  minOrderTime Int     @default(0) // in hours
   ingredients String?
   allergens   String?
   createdAt   DateTime @default(now())
@@ -93,20 +96,23 @@ model Product {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String
-  status          OrderStatus @default(PENDING)
+  id              String   @id @default(cuid())
+  userId          String?  // Allow null for guest checkout
+  status          String   @default("PENDING")
   total           Float
   customerName    String
   customerEmail   String
   customerPhone   String?
   deliveryAddress String?
-  deliveryDate    DateTime?
-  notes           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  pickupDate      DateTime?
+  pickupTime      String?
+  deliveryDate    DateTime? // Deprecated: Use pickupDate instead
+  specialInstructions String?
+  notes           String?   // Deprecated: Use specialInstructions instead
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id])
+  user       User?       @relation(fields: [userId], references: [id])
   orderItems OrderItem[]
 }
 
@@ -120,13 +126,4 @@ model OrderItem {
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
-}
-
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PREPARING
-  READY
-  DELIVERED
-  CANCELLED
 }

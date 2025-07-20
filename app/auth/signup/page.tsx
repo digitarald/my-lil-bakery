@@ -6,6 +6,8 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,40 +15,24 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
+import { signUpSchema, type SignUpInput } from "@/lib/validations"
 
 export default function SignUpPage() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    phone: "",
-  })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }))
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<SignUpInput>({
+    resolver: zodResolver(signUpSchema),
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("Passwords do not match")
-      return
-    }
-
-    if (formData.password.length < 6) {
-      toast.error("Password must be at least 6 characters")
-      return
-    }
-
+  const onSubmit = async (data: SignUpInput) => {
     setIsLoading(true)
 
     try {
@@ -56,21 +42,22 @@ export default function SignUpPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          confirmPassword: data.confirmPassword,
+          terms: data.terms,
         }),
       })
 
-      const data = await response.json()
+      const responseData = await response.json()
 
       if (response.ok) {
         toast.success("Account created successfully!")
         // Automatically sign in the user
         const result = await signIn("credentials", {
-          email: formData.email,
-          password: formData.password,
+          email: data.email,
+          password: data.password,
           redirect: false,
         })
 
@@ -81,7 +68,16 @@ export default function SignUpPage() {
           router.push("/auth/signin")
         }
       } else {
-        toast.error(data.error || "Failed to create account")
+        if (responseData.details) {
+          // Handle validation errors from server
+          responseData.details.forEach((detail: { field: string; message: string }) => {
+            setError(detail.field as keyof SignUpInput, {
+              message: detail.message,
+            })
+          })
+        } else {
+          toast.error(responseData.error || "Failed to create account")
+        }
       }
     } catch (error) {
       toast.error("Something went wrong")
@@ -101,10 +97,10 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-amber-800">🧁 Sweet Dreams Bakery</CardTitle>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">🧁 Sweet Dreams Bakery</CardTitle>
           <CardDescription>Create your account to get started</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -141,43 +137,29 @@ export default function SignUpPage() {
           </div>
 
           {/* Email Sign Up Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
-                name="name"
                 type="text"
                 placeholder="Enter your full name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
+                {...register("name")}
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                name="email"
                 type="email"
                 placeholder="Enter your email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
+                {...register("email")}
+                className={errors.email ? "border-red-500" : ""}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone (Optional)</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="Enter your phone number"
-                value={formData.phone}
-                onChange={handleInputChange}
-              />
+              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -185,12 +167,10 @@ export default function SignUpPage() {
               <div className="relative">
                 <Input
                   id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
+                  {...register("password")}
+                  className={errors.password ? "border-red-500 pr-10" : "pr-10"}
                 />
                 <Button
                   type="button"
@@ -202,6 +182,7 @@ export default function SignUpPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -209,12 +190,10 @@ export default function SignUpPage() {
               <div className="relative">
                 <Input
                   id="confirmPassword"
-                  name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  required
+                  {...register("confirmPassword")}
+                  className={errors.confirmPassword ? "border-red-500 pr-10" : "pr-10"}
                 />
                 <Button
                   type="button"
@@ -226,17 +205,34 @@ export default function SignUpPage() {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+              {errors.confirmPassword && <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Account..." : "Create Account"}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="terms"
+                {...register("terms")}
+                className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+              />
+              <Label htmlFor="terms" className="text-sm">
+                I agree to the{" "}
+                <Link href="/terms" className="text-pink-600 hover:underline">
+                  Terms and Conditions
+                </Link>
+              </Label>
+            </div>
+            {errors.terms && <p className="text-sm text-red-500">{errors.terms.message}</p>}
+
+            <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
+              {isLoading || isSubmitting ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="text-center">
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/auth/signin" className="text-amber-600 hover:underline">
+            <Link href="/auth/signin" className="text-pink-600 hover:underline">
               Sign in
             </Link>
           </p>

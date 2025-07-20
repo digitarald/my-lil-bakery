@@ -16,7 +16,7 @@ export default function AuthCodeErrorPage() {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-gray-600">
-              Sorry, we couldn't complete your authentication. This could be due to an expired or invalid link.
+              Sorry, we couldn&apos;t complete your authentication. This could be due to an expired or invalid link.
             </p>
             <div className="space-y-2">
               <Button

@@ -4,39 +4,47 @@ const prisma = new PrismaClient()
 
 async function main() {
   // Create categories
-  const cakesCategory = await prisma.category.create({
-    data: {
+  const cakesCategory = await prisma.category.upsert({
+    where: { name: "Cakes" },
+    update: {},
+    create: {
       name: "Cakes",
       description: "Delicious handcrafted cakes for every occasion",
       image: "/placeholder.svg?height=200&width=300&text=Cakes",
     },
   })
 
-  const pastriesCategory = await prisma.category.create({
-    data: {
+  const pastriesCategory = await prisma.category.upsert({
+    where: { name: "Pastries" },
+    update: {},
+    create: {
       name: "Pastries",
       description: "Fresh pastries baked daily",
       image: "/placeholder.svg?height=200&width=300&text=Pastries",
     },
   })
 
-  const breadCategory = await prisma.category.create({
-    data: {
+  const breadCategory = await prisma.category.upsert({
+    where: { name: "Bread" },
+    update: {},
+    create: {
       name: "Bread",
       description: "Artisan breads made with premium ingredients",
       image: "/placeholder.svg?height=200&width=300&text=Bread",
     },
   })
 
-  const cookiesCategory = await prisma.category.create({
-    data: {
+  const cookiesCategory = await prisma.category.upsert({
+    where: { name: "Cookies" },
+    update: {},
+    create: {
       name: "Cookies",
       description: "Homemade cookies with love",
       image: "/placeholder.svg?height=200&width=300&text=Cookies",
     },
   })
 
-  // Create products
+  // Create or update products
   const products = [
     // Cakes
     {
@@ -46,6 +54,8 @@ async function main() {
       image: "/placeholder.svg?height=300&width=300&text=Chocolate+Cake",
       categoryId: cakesCategory.id,
       featured: true,
+      preOrder: true,
+      minOrderTime: 24,
       ingredients: "Flour, cocoa powder, eggs, butter, sugar, vanilla",
       allergens: "Contains gluten, eggs, dairy",
     },
@@ -56,6 +66,8 @@ async function main() {
       image: "/placeholder.svg?height=300&width=300&text=Cheesecake",
       categoryId: cakesCategory.id,
       featured: true,
+      preOrder: true,
+      minOrderTime: 24,
       ingredients: "Cream cheese, vanilla beans, eggs, graham crackers",
       allergens: "Contains gluten, eggs, dairy",
     },
@@ -66,6 +78,8 @@ async function main() {
       image: "/placeholder.svg?height=300&width=300&text=Red+Velvet",
       categoryId: cakesCategory.id,
       featured: false,
+      preOrder: true,
+      minOrderTime: 48,
       ingredients: "Flour, cocoa powder, buttermilk, eggs, food coloring",
       allergens: "Contains gluten, eggs, dairy",
     },
@@ -78,6 +92,8 @@ async function main() {
       image: "/placeholder.svg?height=300&width=300&text=Croissants",
       categoryId: pastriesCategory.id,
       featured: true,
+      preOrder: false,
+      minOrderTime: 0,
       ingredients: "Flour, butter, yeast, milk, eggs",
       allergens: "Contains gluten, eggs, dairy",
     },
@@ -88,6 +104,8 @@ async function main() {
       image: "/placeholder.svg?height=300&width=300&text=Apple+Danish",
       categoryId: pastriesCategory.id,
       featured: false,
+      preOrder: false,
+      minOrderTime: 0,
       ingredients: "Flour, butter, apples, cinnamon, sugar",
       allergens: "Contains gluten, dairy",
     },
@@ -148,21 +166,44 @@ async function main() {
   ]
 
   for (const product of products) {
-    await prisma.product.create({
-      data: product,
-    })
+    try {
+      await prisma.product.create({
+        data: product,
+      })
+    } catch (error) {
+      // Product might already exist, skip it
+      console.log(`Product ${product.name} already exists, skipping...`)
+    }
   }
 
   // Create a demo admin user
-  await prisma.user.create({
-    data: {
+  await prisma.user.upsert({
+    where: {
+      email: "admin@sweetdreamsbakery.com",
+    },
+    update: {},
+    create: {
       name: "Admin User",
       email: "admin@sweetdreamsbakery.com",
       role: "admin",
     },
   })
 
+  // Create a secret test admin account for local development
+  await prisma.user.upsert({
+    where: {
+      email: "test.admin@localhost.dev",
+    },
+    update: {},
+    create: {
+      name: "Test Admin",
+      email: "test.admin@localhost.dev",
+      role: "admin",
+    },
+  })
+
   console.log("Database seeded successfully!")
+  console.log("🔐 Test admin account created: test.admin@localhost.dev (password: admin123)")
 }
 
 main()

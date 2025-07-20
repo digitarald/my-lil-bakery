@@ -1,9 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { hashPassword } from "@/lib/password"
+import { signUpSchema } from "@/lib/validations"
+import { ZodError } from "zod"
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, password, phone } = await request.json()
+    const body = await request.json()
+
+    // Validate input using Zod schema
+    const validatedData = signUpSchema.parse(body)
+    const { name, email, password } = validatedData
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -11,23 +18,71 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
-      return NextResponse.json({ error: "User already exists" }, { status: 400 })
+      return NextResponse.json(
+        { error: "A user with this email already exists" }, 
+        { status: 400 }
+      )
     }
 
-    // Create user (in production, hash the password)
+    // Hash the password securely
+    const hashedPassword = await hashPassword(password)
+
+    // Create user with hashed password
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        phone,
-        // Note: In production, hash the password with bcrypt
-        // password: await bcrypt.hash(password, 12),
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
       },
     })
 
-    return NextResponse.json({ message: "User created successfully", userId: user.id }, { status: 201 })
+    return NextResponse.json(
+      { 
+        message: "User created successfully", 
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }
+      }, 
+      { status: 201 }
+    )
   } catch (error) {
     console.error("Signup error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+
+    // Handle validation errors
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { 
+          error: "Validation failed", 
+          details: error.issues.map((issue) => ({
+            field: issue.path.join('.'),
+            message: issue.message,
+          }))
+        }, 
+        { status: 400 }
+      )
+    }
+
+    // Handle Prisma unique constraint errors
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { error: "A user with this email already exists" }, 
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: "Internal server error" }, 
+      { status: 500 }
+    )
   }
 }

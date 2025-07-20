@@ -1,10 +1,11 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,62 +15,98 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ShoppingCart, Plus, Edit, Trash2, DollarSign, Clock, CheckCircle } from "lucide-react"
+import {
+  Plus,
+  Edit,
+  Trash2,
+  ShoppingCart,
+  DollarSign,
+  Clock,
+  CheckCircle,
+} from "lucide-react";
+import { toast } from "sonner";
 import {
   getAllProducts,
   getOrders,
   getOrderStats,
-  addProduct,
+  getCategories,
+  createProduct,
   updateProduct,
   deleteProduct,
   updateOrderStatus,
-} from "@/lib/database"
-import type { Product } from "@/lib/supabase"
-import { toast } from "@/hooks/use-toast"
+  type ProductWithCategory,
+  type OrderWithItems,
+  type OrderStats,
+  type Category,
+} from "@/lib/database";
 
 export default function AdminDashboard() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [orders, setOrders] = useState<any[]>([])
-  const [stats, setStats] = useState({
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [products, setProducts] = useState<ProductWithCategory[]>([]);
+  const [categoryList, setCategoryList] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [stats, setStats] = useState<OrderStats>({
     totalOrders: 0,
-    todayOrders: 0,
-    monthlyRevenue: 0,
+    totalRevenue: 0,
     pendingOrders: 0,
-  })
+  });
   const [loading, setLoading] = useState(true)
   const [isAddingProduct, setIsAddingProduct] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editingProduct, setEditingProduct] =
+    useState<ProductWithCategory | null>(null);
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",
     price: "",
     image: "",
-    category: "",
-    min_order_time: "2",
-    pre_order: false,
-    in_stock: true,
-  })
+    categoryId: "",
+    ingredients: "",
+    allergens: "",
+    featured: false,
+    inStock: true,
+    preOrder: false,
+    minOrderTime: "0",
+  });
 
-  const categories = ["Cakes", "Cupcakes", "Cookies", "Muffins", "Bars", "Pastries", "Pies"]
+  // Authentication check
+  useEffect(() => {
+    if (status === "loading") return; // Still loading
+
+    if (status === "unauthenticated" || !session) {
+      router.push("/auth/signin?callbackUrl=/admin");
+      return;
+    }
+
+    if ((session.user as any)?.role !== "admin") {
+      router.push("/"); // Redirect non-admin users to home
+      return;
+    }
+  }, [session, status, router]);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if ((session?.user as any)?.role === "admin") {
+      loadData();
+    }
+  }, [session]);
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const [productsData, ordersData, statsData] = await Promise.all([getAllProducts(), getOrders(), getOrderStats()])
-      setProducts(productsData)
-      setOrders(ordersData)
-      setStats(statsData)
+      const [productsData, categoriesData, ordersData, statsData] =
+        await Promise.all([
+          getAllProducts(),
+          getCategories(),
+          getOrders(),
+          getOrderStats(),
+        ]);
+      setProducts(productsData as ProductWithCategory[]);
+      setCategoryList(categoriesData);
+      setOrders(ordersData as OrderWithItems[]);
+      setStats(statsData as OrderStats);
     } catch (error) {
       console.error("Error loading admin data:", error)
-      toast({
-        title: "Error loading data",
-        description: "Please try refreshing the page.",
-        variant: "destructive",
-      })
+      toast.error("Error loading data. Please try refreshing the page.")
     } finally {
       setLoading(false)
     }
@@ -79,34 +116,39 @@ export default function AdminDashboard() {
     e.preventDefault()
     try {
       const productData = {
-        ...newProduct,
-        price: Number.parseFloat(newProduct.price),
-        min_order_time: Number.parseInt(newProduct.min_order_time),
-      }
-      await addProduct(productData)
-      toast({
-        title: "Product added successfully!",
-        description: `${newProduct.name} has been added to the catalog.`,
-      })
+        name: newProduct.name,
+        description: newProduct.description,
+        price: parseFloat(newProduct.price),
+        image: newProduct.image,
+        categoryId: newProduct.categoryId,
+        ingredients: newProduct.ingredients || null,
+        allergens: newProduct.allergens || null,
+        featured: newProduct.featured,
+        inStock: newProduct.inStock,
+        preOrder: newProduct.preOrder,
+        minOrderTime: parseInt(newProduct.minOrderTime) || 0,
+      };
+
+      await createProduct(productData);
+      toast.success(`${newProduct.name} has been added to the catalog.`)
       setNewProduct({
         name: "",
         description: "",
         price: "",
         image: "",
-        category: "",
-        min_order_time: "2",
-        pre_order: false,
-        in_stock: true,
-      })
+        categoryId: "",
+        ingredients: "",
+        allergens: "",
+        featured: false,
+        inStock: true,
+        preOrder: false,
+        minOrderTime: "0",
+      });
       setIsAddingProduct(false)
       loadData()
     } catch (error) {
       console.error("Error adding product:", error)
-      toast({
-        title: "Error adding product",
-        description: "Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Error adding product. Please try again.")
     }
   }
 
@@ -115,115 +157,113 @@ export default function AdminDashboard() {
     if (!editingProduct) return
 
     try {
-      await updateProduct(editingProduct.id, {
-        ...editingProduct,
-        price:
-          typeof editingProduct.price === "string" ? Number.parseFloat(editingProduct.price) : editingProduct.price,
-        min_order_time:
-          typeof editingProduct.min_order_time === "string"
-            ? Number.parseInt(editingProduct.min_order_time)
-            : editingProduct.min_order_time,
-      })
-      toast({
-        title: "Product updated successfully!",
-        description: `${editingProduct.name} has been updated.`,
-      })
+      const updateData = {
+        name: editingProduct.name,
+        description: editingProduct.description,
+        price: editingProduct.price,
+        image: editingProduct.image,
+        categoryId: editingProduct.categoryId,
+        ingredients: editingProduct.ingredients,
+        allergens: editingProduct.allergens,
+        featured: editingProduct.featured,
+        inStock: editingProduct.inStock,
+      };
+
+      await updateProduct(editingProduct.id, updateData);
+      toast.success(`${editingProduct.name} has been updated.`)
       setEditingProduct(null)
       loadData()
     } catch (error) {
       console.error("Error updating product:", error)
-      toast({
-        title: "Error updating product",
-        description: "Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Error updating product. Please try again.")
     }
   }
 
-  const handleDeleteProduct = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return
+  const handleDeleteProduct = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
-      await deleteProduct(id)
-      toast({
-        title: "Product deleted",
-        description: `${name} has been removed from the catalog.`,
-      })
-      loadData()
+      await deleteProduct(id);
+      toast.success(`${name} has been removed from the catalog.`);
+      loadData();
     } catch (error) {
-      console.error("Error deleting product:", error)
-      toast({
-        title: "Error deleting product",
-        description: "Please try again.",
-        variant: "destructive",
-      })
+      console.error("Error deleting product:", error);
+      toast.error("Error deleting product. Please try again.");
     }
-  }
+  };
 
-  const handleUpdateOrderStatus = async (orderId: number, newStatus: string) => {
+  const handleUpdateOrderStatus = async (
+    orderId: string,
+    newStatus: string
+  ) => {
     try {
-      await updateOrderStatus(orderId, newStatus)
-      toast({
-        title: "Order status updated",
-        description: `Order #${orderId} status changed to ${newStatus}.`,
-      })
-      loadData()
+      await updateOrderStatus(orderId, newStatus);
+      toast.success(`Order #${orderId.slice(-6)} status changed to ${newStatus}.`);
+      loadData();
     } catch (error) {
-      console.error("Error updating order status:", error)
-      toast({
-        title: "Error updating order status",
-        description: "Please try again.",
-        variant: "destructive",
-      })
+      console.error("Error updating order status:", error);
+      toast.error("Error updating order status. Please try again.");
     }
-  }
+  };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "confirmed":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "preparing":
-        return "bg-orange-100 text-orange-800"
+        return "bg-orange-100 text-orange-800";
       case "ready":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "completed":
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
       case "cancelled":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
   }
 
-  if (loading) {
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading admin dashboard...</p>
+          <p className="text-gray-600">
+            {status === "loading"
+              ? "Checking authentication..."
+              : "Loading admin dashboard..."}
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your bakery's products and orders</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Admin Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Manage your bakery&apos;s products and orders
+          </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Orders
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.totalOrders}
+                  </p>
                 </div>
                 <ShoppingCart className="h-8 w-8 text-pink-600" />
               </div>
@@ -234,20 +274,12 @@ export default function AdminDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Today's Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.todayOrders}</p>
-                </div>
-                <Clock className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">${stats.monthlyRevenue.toFixed(2)}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Total Revenue
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${stats.totalRevenue.toFixed(2)}
+                  </p>
                 </div>
                 <DollarSign className="h-8 w-8 text-green-600" />
               </div>
@@ -258,8 +290,12 @@ export default function AdminDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Pending Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pendingOrders}</p>
+                  <p className="text-sm font-medium text-gray-600">
+                    Pending Orders
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.pendingOrders}
+                  </p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-orange-600" />
               </div>
@@ -283,7 +319,7 @@ export default function AdminDashboard() {
                     Add Product
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add New Product</DialogTitle>
                   </DialogHeader>
@@ -293,7 +329,9 @@ export default function AdminDashboard() {
                       <Input
                         id="name"
                         value={newProduct.name}
-                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({ ...newProduct, name: e.target.value })
+                        }
                         required
                       />
                     </div>
@@ -302,7 +340,12 @@ export default function AdminDashboard() {
                       <Textarea
                         id="description"
                         value={newProduct.description}
-                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            description: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
@@ -314,23 +357,30 @@ export default function AdminDashboard() {
                           type="number"
                           step="0.01"
                           value={newProduct.price}
-                          onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                          onChange={(e) =>
+                            setNewProduct({
+                              ...newProduct,
+                              price: e.target.value,
+                            })
+                          }
                           required
                         />
                       </div>
                       <div>
-                        <Label htmlFor="category">Category</Label>
+                        <Label htmlFor="categoryId">Category</Label>
                         <Select
-                          value={newProduct.category}
-                          onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                          value={newProduct.categoryId}
+                          onValueChange={(value: string) =>
+                            setNewProduct({ ...newProduct, categoryId: value })
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                           <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
+                            {categoryList.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -342,35 +392,61 @@ export default function AdminDashboard() {
                       <Input
                         id="image"
                         value={newProduct.image}
-                        onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            image: e.target.value,
+                          })
+                        }
                         placeholder="/placeholder.svg?height=300&width=300"
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="minOrderTime">Minimum Order Time (hours)</Label>
+                      <Label htmlFor="ingredients">Ingredients</Label>
                       <Input
-                        id="minOrderTime"
-                        type="number"
-                        value={newProduct.min_order_time}
-                        onChange={(e) => setNewProduct({ ...newProduct, min_order_time: e.target.value })}
-                        required
+                        id="ingredients"
+                        value={newProduct.ingredients}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            ingredients: e.target.value,
+                          })
+                        }
+                        placeholder="Optional ingredients list"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="allergens">Allergens</Label>
+                      <Input
+                        id="allergens"
+                        value={newProduct.allergens}
+                        onChange={(e) =>
+                          setNewProduct({
+                            ...newProduct,
+                            allergens: e.target.value,
+                          })
+                        }
+                        placeholder="Optional allergen information"
                       />
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-2">
                         <Switch
-                          id="preOrder"
-                          checked={newProduct.pre_order}
-                          onCheckedChange={(checked) => setNewProduct({ ...newProduct, pre_order: checked })}
+                          id="featured"
+                          checked={newProduct.featured}
+                          onCheckedChange={(checked: boolean) =>
+                            setNewProduct({ ...newProduct, featured: checked })
+                          }
                         />
-                        <Label htmlFor="preOrder">Pre-order item</Label>
+                        <Label htmlFor="featured">Featured item</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="inStock"
-                          checked={newProduct.in_stock}
-                          onCheckedChange={(checked) => setNewProduct({ ...newProduct, in_stock: checked })}
+                          checked={newProduct.inStock}
+                          onCheckedChange={(checked: boolean) =>
+                            setNewProduct({ ...newProduct, inStock: checked })
+                          }
                         />
                         <Label htmlFor="inStock">In stock</Label>
                       </div>
@@ -400,166 +476,60 @@ export default function AdminDashboard() {
                       <TableRow key={product.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
-                            <img
+                            <Image
                               src={product.image || "/placeholder.svg"}
                               alt={product.name}
-                              className="w-12 h-12 object-cover rounded-lg"
+                              width={48}
+                              height={48}
+                              className="object-cover rounded-lg"
                             />
                             <div>
                               <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-gray-500 line-clamp-1">{product.description}</p>
+                              <p className="text-sm text-gray-500 line-clamp-1">
+                                {product.description}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{product.category}</Badge>
+                          <Badge variant="secondary">
+                            {product.category.name}
+                          </Badge>
                         </TableCell>
                         <TableCell>${product.price.toFixed(2)}</TableCell>
                         <TableCell>
                           <div className="flex flex-col space-y-1">
                             <Badge
-                              className={product.in_stock ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                              className={
+                                product.inStock
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }
                             >
-                              {product.in_stock ? "In Stock" : "Out of Stock"}
+                              {product.inStock ? "In Stock" : "Out of Stock"}
                             </Badge>
-                            {product.pre_order && (
+                            {product.featured && (
                               <Badge className="bg-purple-100 text-purple-800">
-                                Pre-order ({product.min_order_time}h)
+                                Featured
                               </Badge>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => setEditingProduct(product)}>
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-md">
-                                <DialogHeader>
-                                  <DialogTitle>Edit Product</DialogTitle>
-                                </DialogHeader>
-                                {editingProduct && (
-                                  <form onSubmit={handleUpdateProduct} className="space-y-4">
-                                    <div>
-                                      <Label htmlFor="editName">Product Name</Label>
-                                      <Input
-                                        id="editName"
-                                        value={editingProduct.name}
-                                        onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                                        required
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editDescription">Description</Label>
-                                      <Textarea
-                                        id="editDescription"
-                                        value={editingProduct.description}
-                                        onChange={(e) =>
-                                          setEditingProduct({ ...editingProduct, description: e.target.value })
-                                        }
-                                        required
-                                      />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <Label htmlFor="editPrice">Price ($)</Label>
-                                        <Input
-                                          id="editPrice"
-                                          type="number"
-                                          step="0.01"
-                                          value={editingProduct.price}
-                                          onChange={(e) =>
-                                            setEditingProduct({
-                                              ...editingProduct,
-                                              price: Number.parseFloat(e.target.value),
-                                            })
-                                          }
-                                          required
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="editCategory">Category</Label>
-                                        <Select
-                                          value={editingProduct.category}
-                                          onValueChange={(value) =>
-                                            setEditingProduct({ ...editingProduct, category: value })
-                                          }
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {categories.map((category) => (
-                                              <SelectItem key={category} value={category}>
-                                                {category}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editImage">Image URL</Label>
-                                      <Input
-                                        id="editImage"
-                                        value={editingProduct.image}
-                                        onChange={(e) =>
-                                          setEditingProduct({ ...editingProduct, image: e.target.value })
-                                        }
-                                        required
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="editMinOrderTime">Minimum Order Time (hours)</Label>
-                                      <Input
-                                        id="editMinOrderTime"
-                                        type="number"
-                                        value={editingProduct.min_order_time}
-                                        onChange={(e) =>
-                                          setEditingProduct({
-                                            ...editingProduct,
-                                            min_order_time: Number.parseInt(e.target.value),
-                                          })
-                                        }
-                                        required
-                                      />
-                                    </div>
-                                    <div className="flex items-center space-x-4">
-                                      <div className="flex items-center space-x-2">
-                                        <Switch
-                                          id="editPreOrder"
-                                          checked={editingProduct.pre_order}
-                                          onCheckedChange={(checked) =>
-                                            setEditingProduct({ ...editingProduct, pre_order: checked })
-                                          }
-                                        />
-                                        <Label htmlFor="editPreOrder">Pre-order item</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Switch
-                                          id="editInStock"
-                                          checked={editingProduct.in_stock}
-                                          onCheckedChange={(checked) =>
-                                            setEditingProduct({ ...editingProduct, in_stock: checked })
-                                          }
-                                        />
-                                        <Label htmlFor="editInStock">In stock</Label>
-                                      </div>
-                                    </div>
-                                    <Button type="submit" className="w-full">
-                                      Update Product
-                                    </Button>
-                                  </form>
-                                )}
-                              </DialogContent>
-                            </Dialog>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeleteProduct(product.id, product.name)}
+                              onClick={() => setEditingProduct(product)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() =>
+                                handleDeleteProduct(product.id, product.name)
+                              }
                               className="text-red-600 hover:text-red-700"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -585,7 +555,6 @@ export default function AdminDashboard() {
                       <TableHead>Customer</TableHead>
                       <TableHead>Items</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead>Pickup</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -593,48 +562,60 @@ export default function AdminDashboard() {
                   <TableBody>
                     {orders.map((order) => (
                       <TableRow key={order.id}>
-                        <TableCell>#{order.id}</TableCell>
+                        <TableCell>#{order.id.slice(-6)}</TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{order.customer_name}</p>
-                            <p className="text-sm text-gray-500">{order.customer_email}</p>
-                            <p className="text-sm text-gray-500">{order.customer_phone}</p>
+                            <p className="font-medium">{order.customerName}</p>
+                            <p className="text-sm text-gray-500">
+                              {order.customerEmail}
+                            </p>
+                            {order.customerPhone && (
+                              <p className="text-sm text-gray-500">
+                                {order.customerPhone}
+                              </p>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {order.order_items?.map((item: any) => (
+                            {order.orderItems?.map((item) => (
                               <div key={item.id} className="text-sm">
-                                {item.products?.name} x{item.quantity}
+                                {item.product?.name} x{item.quantity}
                               </div>
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell>${order.total_amount.toFixed(2)}</TableCell>
+                        <TableCell>${order.total.toFixed(2)}</TableCell>
                         <TableCell>
-                          <div>
-                            <p className="text-sm">{new Date(order.pickup_date).toLocaleDateString()}</p>
-                            <p className="text-sm text-gray-500">{order.pickup_time}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                          <Badge className={getStatusColor(order.status)}>
+                            {order.status}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Select
                             value={order.status}
-                            onValueChange={(value) => handleUpdateOrderStatus(order.id, value)}
+                            onValueChange={(value: string) =>
+                              handleUpdateOrderStatus(order.id, value)
+                            }
                           >
                             <SelectTrigger className="w-32">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="confirmed">Confirmed</SelectItem>
-                              <SelectItem value="preparing">Preparing</SelectItem>
-                              <SelectItem value="ready">Ready</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="PENDING">Pending</SelectItem>
+                              <SelectItem value="CONFIRMED">
+                                Confirmed
+                              </SelectItem>
+                              <SelectItem value="PREPARING">
+                                Preparing
+                              </SelectItem>
+                              <SelectItem value="READY">Ready</SelectItem>
+                              <SelectItem value="COMPLETED">
+                                Completed
+                              </SelectItem>
+                              <SelectItem value="CANCELLED">
+                                Cancelled
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -646,7 +627,162 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Product Dialog */}
+        <Dialog
+          open={!!editingProduct}
+          onOpenChange={(open: boolean) => !open && setEditingProduct(null)}
+        >
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Product</DialogTitle>
+            </DialogHeader>
+            {editingProduct && (
+              <form onSubmit={handleUpdateProduct} className="space-y-4">
+                <div>
+                  <Label htmlFor="editName">Product Name</Label>
+                  <Input
+                    id="editName"
+                    value={editingProduct.name}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        name: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editDescription">Description</Label>
+                  <Textarea
+                    id="editDescription"
+                    value={editingProduct.description || ""}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        description: e.target.value,
+                      })
+                    }
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="editPrice">Price ($)</Label>
+                    <Input
+                      id="editPrice"
+                      type="number"
+                      step="0.01"
+                      value={editingProduct.price}
+                      onChange={(e) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          price: parseFloat(e.target.value),
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="editCategoryId">Category</Label>
+                    <Select
+                      value={editingProduct.categoryId}
+                      onValueChange={(value: string) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          categoryId: value,
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryList.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="editImage">Image URL</Label>
+                  <Input
+                    id="editImage"
+                    value={editingProduct.image || ""}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        image: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editIngredients">Ingredients</Label>
+                  <Input
+                    id="editIngredients"
+                    value={editingProduct.ingredients || ""}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        ingredients: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editAllergens">Allergens</Label>
+                  <Input
+                    id="editAllergens"
+                    value={editingProduct.allergens || ""}
+                    onChange={(e) =>
+                      setEditingProduct({
+                        ...editingProduct,
+                        allergens: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="editFeatured"
+                      checked={editingProduct.featured}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          featured: checked,
+                        })
+                      }
+                    />
+                    <Label htmlFor="editFeatured">Featured item</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="editInStock"
+                      checked={editingProduct.inStock}
+                      onCheckedChange={(checked: boolean) =>
+                        setEditingProduct({
+                          ...editingProduct,
+                          inStock: checked,
+                        })
+                      }
+                    />
+                    <Label htmlFor="editInStock">In stock</Label>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full">
+                  Update Product
+                </Button>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
-  )
+  );
 }

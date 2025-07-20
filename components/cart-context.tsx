@@ -2,17 +2,13 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
+import type { Product as PrismaProduct } from "@prisma/client"
 
-export interface Product {
-  id: number
-  name: string
-  description: string
-  price: number
-  image: string
-  category: string
-  min_order_time: number
-  pre_order: boolean
-  in_stock: boolean
+export interface Product extends PrismaProduct {
+  category?: {
+    id: string
+    name: string
+  }
 }
 
 export interface CartItem extends Product {
@@ -22,8 +18,8 @@ export interface CartItem extends Product {
 interface CartContextType {
   cartItems: CartItem[]
   addToCart: (product: Product) => void
-  removeFromCart: (productId: number) => void
-  updateQuantity: (productId: number, quantity: number) => void
+  removeFromCart: (productId: string) => void
+  updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   getCartTotal: () => number
   getMinOrderTime: () => number
@@ -64,11 +60,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     })
   }
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string) => {
     setCartItems((prev) => prev.filter((item) => item.id !== productId))
   }
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId)
       return
@@ -86,7 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const getMinOrderTime = () => {
     if (cartItems.length === 0) return 0
-    return Math.max(...cartItems.map((item) => Number(item.min_order_time) || 0))
+    return Math.max(...cartItems.map((item) => item.minOrderTime || 0))
   }
 
   const toggleCart = () => {
