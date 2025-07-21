@@ -15,6 +15,11 @@ interface OrderEmailData {
 }
 
 export async function sendOrderConfirmationEmail(data: OrderEmailData) {
+  if (!process.env.RESEND_API_KEY) {
+    console.error("RESEND_API_KEY is not configured. Order confirmation email will not be sent.")
+    throw new Error("Email service is not configured")
+  }
+
   try {
     await resend.emails.send({
       from: process.env.EMAIL_FROM!,
@@ -91,6 +96,11 @@ export async function sendOrderStatusUpdateEmail(
   orderId: string,
   status: string,
 ) {
+  if (!process.env.RESEND_API_KEY) {
+    console.error("RESEND_API_KEY is not configured. Order status update email will not be sent.")
+    throw new Error("Email service is not configured")
+  }
+
   const statusMessages = {
     CONFIRMED: "Your order has been confirmed and we're preparing it!",
     PREPARING: "Your delicious treats are being prepared with care.",

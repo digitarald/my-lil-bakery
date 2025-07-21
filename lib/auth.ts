@@ -17,6 +17,11 @@ export const authOptions: any = {
     }),
     EmailProvider({
       async sendVerificationRequest({ identifier: email, url }) {
+        if (!process.env.RESEND_API_KEY) {
+          console.error("RESEND_API_KEY is not configured. Email verification will not work.")
+          throw new Error("Email service is not configured")
+        }
+
         try {
           await resend.emails.send({
             from: process.env.EMAIL_FROM!,
