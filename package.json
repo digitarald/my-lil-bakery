@@ -2,6 +2,7 @@
   "name": "sweet-dreams-bakery",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "build": "next build",
     "db:generate": "prisma generate",
