@@ -1,9 +1,7 @@
-import type { NextRequest } from "next/server"
 import { withAuth } from "next-auth/middleware"
 
 export default withAuth(
-  function middleware(req: NextRequest) {
-    // Add any additional middleware logic here
+  function middleware() {
   },
   {
     callbacks: {

@@ -97,7 +97,6 @@ describe("CartSidebar", () => {
     // Add item to cart
     fireEvent.click(screen.getByText("Add Item"))
     
-    // Wait a moment to ensure state updates
     await waitFor(() => {
       expect(screen.getByText("Add Item")).toBeInTheDocument()
     })
@@ -105,14 +104,13 @@ describe("CartSidebar", () => {
     // Open cart
     fireEvent.click(screen.getByText("Open Cart"))
 
-    // Check initial quantity - the item might already have quantity > 1
+    // The item might already have quantity > 1
     const quantityElement = await screen.findByTestId("quantity-1")
     const initialQuantity = parseInt(quantityElement.textContent || "0")
     
     // Click increase button
     fireEvent.click(screen.getByTestId("increase-1"))
 
-    // Check that quantity increased by 1
     await waitFor(() => {
       expect(screen.getByTestId("quantity-1")).toHaveTextContent(String(initialQuantity + 1))
     })

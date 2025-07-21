@@ -124,14 +124,14 @@ export async function createOrder(orderData: {
 
   return await prisma.order.create({
     data: {
-      userId: orderData.userId,
+      userId: orderData.userId ?? null,
       customerName: orderData.customerName,
       customerEmail: orderData.customerEmail,
-      customerPhone: orderData.customerPhone,
-      deliveryAddress: orderData.deliveryAddress,
-      pickupDate: orderData.pickupDate,
-      pickupTime: orderData.pickupTime,
-      specialInstructions: orderData.specialInstructions,
+      customerPhone: orderData.customerPhone ?? null,
+      deliveryAddress: orderData.deliveryAddress ?? null,
+      pickupDate: orderData.pickupDate ?? null,
+      pickupTime: orderData.pickupTime ?? null,
+      specialInstructions: orderData.specialInstructions ?? null,
       total,
       orderItems: {
         create: orderData.items.map((item) => ({

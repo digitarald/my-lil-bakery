@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth.js required models
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -24,8 +20,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -45,14 +40,13 @@ model User {
   emailVerified DateTime?
   image         String?
   phone         String?
-  password      String?   // Optional for OAuth users
   role          String    @default("customer")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  accounts Account[]
-  sessions Session[]
-  orders   Order[]
+  password      String?
+  accounts      Account[]
+  orders        Order[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -63,7 +57,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// Bakery specific models
 model Category {
   id          String    @id @default(cuid())
   name        String    @unique
@@ -71,49 +64,46 @@ model Category {
   image       String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-
-  products Product[]
+  products    Product[]
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  image       String?
-  categoryId  String
-  inStock     Boolean  @default(true)
-  featured    Boolean  @default(false)
-  preOrder    Boolean  @default(false)
-  minOrderTime Int     @default(0) // in hours
-  ingredients String?
-  allergens   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  category   Category    @relation(fields: [categoryId], references: [id])
-  orderItems OrderItem[]
+  id           String      @id @default(cuid())
+  name         String
+  description  String?
+  price        Float
+  image        String?
+  categoryId   String
+  inStock      Boolean     @default(true)
+  featured     Boolean     @default(false)
+  preOrder     Boolean     @default(false)
+  minOrderTime Int         @default(0)
+  ingredients  String?
+  allergens    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orderItems   OrderItem[]
+  category     Category    @relation(fields: [categoryId], references: [id])
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  userId          String?  // Allow null for guest checkout
-  status          String   @default("PENDING")
-  total           Float
-  customerName    String
-  customerEmail   String
-  customerPhone   String?
-  deliveryAddress String?
-  pickupDate      DateTime?
-  pickupTime      String?
-  deliveryDate    DateTime? // Deprecated: Use pickupDate instead
+  id                  String      @id @default(cuid())
+  userId              String?
+  status              String      @default("PENDING")
+  total               Float
+  customerName        String
+  customerEmail       String
+  customerPhone       String?
+  deliveryAddress     String?
+  pickupDate          DateTime?
+  pickupTime          String?
+  deliveryDate        DateTime?
   specialInstructions String?
-  notes           String?   // Deprecated: Use specialInstructions instead
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  user       User?       @relation(fields: [userId], references: [id])
-  orderItems OrderItem[]
+  notes               String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  user                User?       @relation(fields: [userId], references: [id])
+  orderItems          OrderItem[]
 }
 
 model OrderItem {
@@ -123,7 +113,6 @@ model OrderItem {
   quantity  Int
   price     Float
   createdAt DateTime @default(now())
-
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }

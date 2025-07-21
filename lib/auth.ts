@@ -48,7 +48,6 @@ export const authOptions: any = {
             `,
           })
         } catch (error) {
-          console.error("Failed to send verification email:", error)
           throw new Error("Failed to send verification email")
         }
       },
@@ -74,24 +73,8 @@ export const authOptions: any = {
           return null
         }
 
-        // Special case for test admin account in local development
-        if (
-          user.email === "test.admin@localhost.dev" &&
-          credentials.password === "admin123" &&
-          process.env.NODE_ENV === "development"
-        ) {
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            image: user.image,
-            role: user.role,
-          }
-        }
-
         // Check if user has a password (credential-based account)
         if (!user.password) {
-          console.warn(`User ${user.email} attempted credential login but has no password set`)
           return null
         }
 

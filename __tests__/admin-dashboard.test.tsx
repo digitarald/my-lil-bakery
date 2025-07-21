@@ -45,25 +45,21 @@ describe("AdminDashboard", () => {
   test("renders dashboard stats", async () => {
     render(<AdminDashboard />);
 
-    // Check that admin dashboard title appears
     expect(await screen.findByText("Admin Dashboard", {}, { timeout: 3000 })).toBeInTheDocument();
 
-    // Check for stats
     expect(await screen.findByText("Total Orders")).toBeInTheDocument();
-    expect(screen.getByText("10")).toBeInTheDocument(); // totalOrders from mock
+    expect(screen.getByText("10")).toBeInTheDocument();
     expect(screen.getByText("Pending Orders")).toBeInTheDocument();
-    expect(screen.getByText("3")).toBeInTheDocument(); // pendingOrders from mock
+    expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("Total Revenue")).toBeInTheDocument();
-    expect(screen.getByText("$250.00")).toBeInTheDocument(); // totalRevenue from mock
+    expect(screen.getByText("$250.00")).toBeInTheDocument();
   });
 
   test("shows products table", async () => {
     render(<AdminDashboard />);
 
-    // Wait for content to load
     expect(await screen.findByText("Admin Dashboard", {}, { timeout: 3000 })).toBeInTheDocument();
 
-    // Check that products are displayed
     expect(await screen.findByText("Rainbow Cupcakes")).toBeInTheDocument();
     expect(screen.getByText("Strawberry Shortcake")).toBeInTheDocument();
     expect(screen.getByText("Chocolate Chip Cookies")).toBeInTheDocument();
@@ -73,7 +69,6 @@ describe("AdminDashboard", () => {
   test("can open add product dialog", async () => {
     render(<AdminDashboard />)
 
-    // Wait for content to load
     expect(await screen.findByText("Admin Dashboard", {}, { timeout: 3000 })).toBeInTheDocument();
 
     // Look for the Add Product button with Plus icon

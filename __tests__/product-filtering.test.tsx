@@ -19,14 +19,12 @@ describe("Product Filtering", () => {
   test("filters products by category", async () => {
     renderWithCart(<HomePage />);
 
-    // Wait for products to load and be visible
     await waitFor(() => {
       expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
       expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2); // Featured + All products
       expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
     });
 
-    // Find and click category dropdown for cakes
     const categorySelects = screen.getAllByRole("combobox");
     const categorySelect = categorySelects.find(
       (select: Element) => select.getAttribute("aria-expanded") !== null
@@ -41,7 +39,6 @@ describe("Product Filtering", () => {
       });
 
       await waitFor(() => {
-        // Should only show cake products now
         expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2); // Still featured + filtered
         expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(0); // Not visible in filtered section
         expect(screen.queryAllByText("Chocolate Chip Cookies")).toHaveLength(0);
@@ -77,7 +74,6 @@ describe("Product Filtering", () => {
     fireEvent.change(searchInput, { target: { value: "cake" } });
 
     await waitFor(() => {
-      // Should show both cupcakes and cakes that contain "cake"
       expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
     });
   });

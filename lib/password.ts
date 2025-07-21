@@ -17,7 +17,6 @@ export async function hashPassword(password: string): Promise<string> {
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
     return hashedPassword
   } catch (error) {
-    console.error("Error hashing password:", error)
     throw new Error("Failed to hash password")
   }
 }
@@ -33,7 +32,6 @@ export async function verifyPassword(password: string, hashedPassword: string): 
     const isValid = await bcrypt.compare(password, hashedPassword)
     return isValid
   } catch (error) {
-    console.error("Error verifying password:", error)
     return false
   }
 }
@@ -80,7 +78,6 @@ export function validatePasswordStrength(password: string): {
   const feedback: string[] = []
   let score = 0
   
-  // Length check
   if (password.length >= 8) {
     score += 1
   } else {
@@ -91,7 +88,6 @@ export function validatePasswordStrength(password: string): {
     score += 1
   }
   
-  // Character type checks
   if (/[a-z]/.test(password)) {
     score += 1
   } else {

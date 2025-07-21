@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,7 +21,6 @@ import {
   Trash2,
   ShoppingCart,
   DollarSign,
-  Clock,
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -105,7 +104,6 @@ export default function AdminDashboard() {
       setOrders(ordersData as OrderWithItems[]);
       setStats(statsData as OrderStats);
     } catch (error) {
-      console.error("Error loading admin data:", error)
       toast.error("Error loading data. Please try refreshing the page.")
     } finally {
       setLoading(false)
@@ -147,7 +145,6 @@ export default function AdminDashboard() {
       setIsAddingProduct(false)
       loadData()
     } catch (error) {
-      console.error("Error adding product:", error)
       toast.error("Error adding product. Please try again.")
     }
   }
@@ -174,7 +171,6 @@ export default function AdminDashboard() {
       setEditingProduct(null)
       loadData()
     } catch (error) {
-      console.error("Error updating product:", error)
       toast.error("Error updating product. Please try again.")
     }
   }
@@ -187,7 +183,6 @@ export default function AdminDashboard() {
       toast.success(`${name} has been removed from the catalog.`);
       loadData();
     } catch (error) {
-      console.error("Error deleting product:", error);
       toast.error("Error deleting product. Please try again.");
     }
   };
@@ -201,7 +196,6 @@ export default function AdminDashboard() {
       toast.success(`Order #${orderId.slice(-6)} status changed to ${newStatus}.`);
       loadData();
     } catch (error) {
-      console.error("Error updating order status:", error);
       toast.error("Error updating order status. Please try again.");
     }
   };

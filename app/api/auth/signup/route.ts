@@ -8,11 +8,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate input using Zod schema
     const validatedData = signUpSchema.parse(body)
     const { name, email, password } = validatedData
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     })
@@ -27,7 +25,6 @@ export async function POST(request: NextRequest) {
     // Hash the password securely
     const hashedPassword = await hashPassword(password)
 
-    // Create user with hashed password
     const user = await prisma.user.create({
       data: {
         name,
@@ -56,8 +53,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error("Signup error:", error)
-
     // Handle validation errors
     if (error instanceof ZodError) {
       return NextResponse.json(

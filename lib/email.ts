@@ -10,7 +10,7 @@ interface OrderEmailData {
     price: number
   }>
   total: number
-  deliveryDate?: Date
+  pickupDate?: Date
   deliveryAddress?: string
 }
 
@@ -51,10 +51,10 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
             </div>
 
             ${
-              data.deliveryDate
+              data.pickupDate
                 ? `
               <p style="color: #6b7280;">
-                <strong>Delivery Date:</strong> ${data.deliveryDate.toLocaleDateString()}
+                <strong>Pickup Date:</strong> ${data.pickupDate.toLocaleDateString()}
               </p>
             `
                 : ""
@@ -81,7 +81,6 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
       `,
     })
   } catch (error) {
-    console.error("Failed to send order confirmation email:", error)
     throw new Error("Failed to send order confirmation email")
   }
 }
@@ -135,7 +134,6 @@ export async function sendOrderStatusUpdateEmail(
       `,
     })
   } catch (error) {
-    console.error("Failed to send order status update email:", error)
     throw new Error("Failed to send order status update email")
   }
 }

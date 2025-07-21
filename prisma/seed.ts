@@ -3,7 +3,6 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 async function main() {
-  // Create categories
   const cakesCategory = await prisma.category.upsert({
     where: { name: "Cakes" },
     update: {},
@@ -44,7 +43,6 @@ async function main() {
     },
   })
 
-  // Create or update products
   const products = [
     // Cakes
     {

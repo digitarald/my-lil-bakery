@@ -1,86 +1,65 @@
-# Sweet Dreams Bakery
+# Sweet Dreams Bakery Platform
 
-A modern bakery e-commerce application built with Next.js, Prisma, and TypeScript.
+Our online bakery platform - built for Sweet Dreams Bakery team.
 
-## Tech Stack
+## Quick Start
 
-- **Frontend**: Next.js 15 with TypeScript
-- **Database**: Prisma ORM with SQLite (dev) / PostgreSQL (production)
-- **Authentication**: NextAuth.js
-- **Styling**: Tailwind CSS with Radix UI components
-- **Testing**: Jest with React Testing Library
+```bash
+# Install dependencies
+pnpm install
 
-## Getting Started
+# Setup database & seed with our products
+pnpm db:migrate && pnpm db:seed
 
-### Prerequisites
+# Start development
+pnpm dev
+```
 
-- Node.js 18+
-- pnpm (recommended)
+Visit `http://localhost:3000` - you're ready to go!
 
-### Installation
+## Daily Commands
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
+```bash
+pnpm dev          # Start development server
+pnpm test         # Run tests
+pnpm db:studio    # View database in browser
+pnpm db:seed      # Reset to sample data
+```
 
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-   Update the `.env` file with your configuration.
+## What's Built
 
-4. Set up the database:
-   ```bash
-   pnpm db:generate  # Generate Prisma client
-   pnpm db:migrate   # Create database schema
-   pnpm db:seed      # Populate with sample data
-   ```
+- **Customer storefront** - Browse our 4 categories (Cakes, Pastries, Bread, Cookies)
+- **Shopping cart** - Add items, checkout
+- **User accounts** - Customer signup/login
+- **Admin dashboard** - Manage products and orders at `/admin`
+- **Order system** - Track customer orders
 
-5. Start the development server:
-   ```bash
-   pnpm dev
-   ```
+## Tech We're Using
 
-The application will be available at `http://localhost:3000`.
+- Next.js 15 (App Router)
+- Prisma (SQLite for dev)
+- NextAuth.js (authentication)
+- Tailwind CSS + Radix UI
+- TypeScript
 
-## Database Management
+## Test Data
 
-- **Generate Prisma client**: `pnpm db:generate`
-- **Create new migration**: `pnpm db:migrate`
-- **Seed database**: `pnpm db:seed`
-- **View database**: `pnpm db:studio`
+When you seed, you get:
+- 10 sample bakery products across our categories
+- Test admin account: `admin@sweetdreamsbakery.com`
 
-## Testing
+## Project Layout
 
-- Run all tests: `pnpm test`
-- Run tests in watch mode: `pnpm test:watch`
+```
+app/           # Pages (homepage, admin, auth)
+components/    # Reusable UI components  
+lib/           # Database & utility functions
+prisma/        # Database schema & seed data
+__tests__/     # Test files
+```
 
-## Project Structure
+## Need Help?
 
-- `/app` - Next.js app router pages and API routes
-- `/components` - Reusable React components
-- `/lib` - Utility functions and database operations
-- `/prisma` - Database schema and seed data
-- `/hooks` - Custom React hooks
-- `/__tests__` - Test files
-
-## Features
-
-- Product catalog with categories
-- Shopping cart functionality
-- User authentication and profiles
-- Order management system
-- Admin dashboard for product/order management
-- Responsive design for all devices
-
-## Seed Data
-
-The application comes with pre-populated seed data including:
-
-- **4 Categories**: Cakes, Pastries, Bread, Cookies
-- **10 Sample Products**: Various bakery items with pricing and details
-- **Admin User**: admin@sweetdreamsbakery.com (you'll need to update the role after signup)
-
-The seed uses the TypeScript Prisma seed file at `prisma/seed.ts`.
+- Database issues? Run `pnpm db:migrate`
+- Want fresh data? Run `pnpm db:seed`
+- Tests failing? Check `pnpm test`

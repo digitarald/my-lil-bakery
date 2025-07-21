@@ -2,8 +2,6 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,7 +20,6 @@ import { ShoppingCart, Plus, Minus, Trash2, CalendarIcon, Clock, User, Mail, Pho
 import { format } from "date-fns"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { checkoutSchema, type CheckoutInput } from "@/lib/validations"
 
 interface CartSidebarProps {
   isOpen?: boolean
@@ -157,7 +154,6 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
       onClose?.()
       router.push("/checkout/success")
     } catch (error) {
-      console.error("Error creating order:", error)
       toast.error("There was an error placing your order. Please try again.")
     } finally {
       setIsCheckingOut(false)
@@ -352,7 +348,7 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
                                 minDate.setHours(0, 0, 0, 0)
                                 return date < new Date(Math.max(today.getTime(), minDate.getTime()))
                               }}
-                              initialFocus
+                              autoFocus
                             />
                           </PopoverContent>
                         </Popover>

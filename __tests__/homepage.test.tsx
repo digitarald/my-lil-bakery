@@ -12,7 +12,7 @@ describe("HomePage", () => {
 
     // Use getAllByText since "Sweet Dreams Bakery" appears multiple times
     expect(screen.getAllByText("Sweet Dreams Bakery")).toHaveLength(2);
-    // Check for navigation links in header (be more specific to avoid footer matches)
+    // Be more specific to avoid footer matches
     const headerNav = screen.getByRole("navigation");
     expect(headerNav).toHaveTextContent("Products");
     expect(headerNav).toHaveTextContent("About");
@@ -85,7 +85,6 @@ describe("HomePage", () => {
     const addToCartButtons = screen.getAllByText("Add to Cart");
     fireEvent.click(addToCartButtons[0]);
 
-    // Check that cart count badge appears
     await waitFor(() => {
       expect(screen.getByText("1")).toBeInTheDocument(); // Cart count badge
     });
@@ -110,7 +109,6 @@ describe("HomePage", () => {
       );
       expect(cartButton).toBeInTheDocument();
 
-      // Check that a cart count badge exists (regardless of number)
       const cartCountBadge = cartButton?.querySelector(".bg-pink-500");
       expect(cartCountBadge).toBeInTheDocument();
     });
@@ -122,7 +120,6 @@ describe("HomePage", () => {
 
     fireEvent.click(cartButton!);
 
-    // Check that the cart sidebar opens
     await waitFor(() => {
       expect(screen.getByText(/Your Cart/)).toBeInTheDocument();
     });

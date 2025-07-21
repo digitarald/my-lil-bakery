@@ -1,15 +1,13 @@
 "use client"
 
 import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Home, ShoppingBag, Calendar, Clock } from "lucide-react"
+import { CheckCircle, Home, ShoppingBag, Calendar } from "lucide-react"
 import { useCart } from "@/components/cart-context"
 
 export default function CheckoutSuccessPage() {
-  const router = useRouter()
   const { clearCart } = useCart()
 
   useEffect(() => {

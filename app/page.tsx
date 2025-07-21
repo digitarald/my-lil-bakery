@@ -25,7 +25,6 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState("name")
   const [loading, setLoading] = useState(true)
 
-  // Load products from database
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -33,7 +32,7 @@ export default function HomePage() {
         setProducts(productsData)
         setFilteredProducts(productsData)
       } catch (error) {
-        console.error("Error loading products:", error)
+        // Silently fail - user will see loading state
       } finally {
         setLoading(false)
       }
@@ -42,7 +41,6 @@ export default function HomePage() {
     loadProducts()
   }, [])
 
-  // Filter and sort products
   useEffect(() => {
     const filtered = products.filter((product) => {
       const matchesSearch =
@@ -54,7 +52,6 @@ export default function HomePage() {
       return matchesSearch && matchesCategory
     })
 
-    // Sort products
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "price-low":
