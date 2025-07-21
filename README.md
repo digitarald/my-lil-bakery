@@ -1,5 +1,7 @@
 # Sweet Dreams Bakery Platform
 
+[![CI](https://github.com/digitarald/my-lil-bakery/actions/workflows/ci.yml/badge.svg)](https://github.com/digitarald/my-lil-bakery/actions/workflows/ci.yml)
+
 Our online bakery platform - built for Sweet Dreams Bakery team.
 
 ## Quick Start
@@ -57,6 +59,17 @@ lib/           # Database & utility functions
 prisma/        # Database schema & seed data
 __tests__/     # Test files
 ```
+
+## Continuous Integration
+
+Our CI pipeline automatically runs on every push to main and pull requests:
+
+- **Code Quality**: ESLint linting and TypeScript type checking
+- **Testing**: Full Jest test suite with database setup
+- **Build**: Next.js production build validation
+- **Security**: Dependency vulnerability scanning
+
+The workflow uses Node.js 22 LTS and pnpm for package management.
 
 ## Need Help?
 
