@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VARIANT: 22-bookworm-slim
+    volumes:
+      # Mount the project directory
+      - ../:/workspace:cached
+      # Persist node_modules for better performance
+      - node_modules_cache:/workspace/node_modules
+      # Persist Prisma database
+      - ../prisma:/workspace/prisma:cached
+    working_dir: /workspace
+    command: sleep infinity
+    network_mode: service:db
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=file:./prisma/dev.db
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=dev-secret-change-in-production
+
+  # Optional PostgreSQL service (commented out by default)
+  # Uncomment if you want to test with PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:16-alpine
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_PASSWORD: bakery_dev
+  #     POSTGRES_USER: bakery
+  #     POSTGRES_DB: sweet_dreams_bakery
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+  # Lightweight service for networking (required for network_mode)
+  db:
+    image: alpine:latest
+    command: sleep infinity
+    ports:
+      - "3000:3000"
+      - "5555:5555"
+
+volumes:
+  node_modules_cache:
+  # postgres_data:  # Uncomment if using PostgreSQL

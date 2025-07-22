@@ -1,0 +1,61 @@
+{
+  "name": "Sweet Dreams Bakery Dev Environment",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  
+  "forwardPorts": [3000, 5555],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js Dev Server",
+      "onAutoForward": "notify"
+    },
+    "5555": {
+      "label": "Prisma Studio",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "Prisma.prisma",
+        "ms-vscode.vscode-json",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "typescript.preferences.useAliasesForRenames": false,
+        "typescript.suggest.autoImports": true,
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "files.associations": {
+          "*.css": "tailwindcss"
+        },
+        "tailwindCSS.includeLanguages": {
+          "typescript": "javascript",
+          "typescriptreact": "javascript"
+        }
+      }
+    }
+  },
+
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "DATABASE_URL": "file:./prisma/dev.db",
+    "NEXTAUTH_URL": "http://localhost:3000",
+    "NEXTAUTH_SECRET": "dev-secret-change-in-production"
+  },
+
+  "postCreateCommand": ".devcontainer/postCreateCommand.sh",
+  "postStartCommand": "pnpm dev",
+  "shutdownAction": "stopCompose",
+  "remoteUser": "node",
+  "updateRemoteUserUID": true
+}

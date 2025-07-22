@@ -1,0 +1,27 @@
+# GitHub Codespaces configuration for Sweet Dreams Bakery
+
+# Prebuild configuration
+prebuild: true
+
+# Machine type suggestions
+# 2-core: Basic development, documentation
+# 4-core: Full builds, intensive development  
+# 8-core: Large rebuilds, CI testing (cost optimization)
+machine:
+  recommended: "standardLinux32gb"  # 4-core, 8GB RAM - good balance
+  
+# Skip automatic port forwarding for internal services
+skipAutomaticPortForwarding: false
+
+# Customize the creation process
+onCreate: |
+  echo "🧁 Welcome to Sweet Dreams Bakery Codespace!"
+  echo "Setting up your development environment..."
+
+onStart: |
+  # Ensure the development server doesn't auto-start
+  echo "Environment ready. Run 'pnpm dev' to start developing!"
+  
+# Environment-specific settings
+env:
+  CODESPACE: "true"
