@@ -3,10 +3,11 @@ import { updateOrderStatus } from "@/lib/database"
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { status } = await request.json()
+    const { id } = await params
     
     if (!status) {
       return NextResponse.json(
@@ -15,7 +16,7 @@ export async function PATCH(
       )
     }
 
-    const order = await updateOrderStatus(params.id, status)
+    const order = await updateOrderStatus(id, status)
     return NextResponse.json(order)
   } catch (error) {
     console.error("Error updating order status:", error)
