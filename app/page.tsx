@@ -8,10 +8,10 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ShoppingCart, Search, Filter, Star, Clock, MapPin, Phone, Mail, Heart, Award, Users, Cake } from "lucide-react"
+import { ShoppingCart, Search, Filter, Star, Clock, MapPin, Phone, Mail, Award, Users, Cake } from "lucide-react"
 import { useCart } from "@/components/cart-context"
 import { CartSidebar } from "@/components/cart-sidebar"
-import { getProducts, type ProductWithCategory } from "@/lib/database"
+import type { ProductWithCategory } from "@/lib/database"
 import { AuthButton } from "@/components/auth-button";
 import { useSession } from "next-auth/react";
 
@@ -28,10 +28,15 @@ export default function HomePage() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const productsData = await getProducts()
+        const response = await fetch('/api/products')
+        if (!response.ok) {
+          throw new Error('Failed to fetch products')
+        }
+        const productsData = await response.json()
         setProducts(productsData)
         setFilteredProducts(productsData)
       } catch (error) {
+        console.error('Error loading products:', error)
         // Silently fail - user will see loading state
       } finally {
         setLoading(false)
@@ -209,13 +214,6 @@ export default function HomePage() {
                       {product.preOrder && (
                         <Badge className="absolute top-3 left-3 bg-purple-500 text-white">Pre-Order</Badge>
                       )}
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Heart className="h-4 w-4" />
-                      </Button>
                     </div>
                     <CardContent className="p-6">
                       <h3 className="font-bold text-lg mb-2">{product.name}</h3>
@@ -320,13 +318,6 @@ export default function HomePage() {
                     {!product.inStock && (
                       <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">Out of Stock</Badge>
                     )}
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Heart className="h-4 w-4" />
-                    </Button>
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold mb-1 line-clamp-1">{product.name}</h3>
@@ -517,26 +508,10 @@ export default function HomePage() {
             <div>
               <h3 className="font-semibold mb-4">Categories</h3>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Cakes
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Cupcakes
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Cookies
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white transition-colors">
-                    Pastries
-                  </a>
-                </li>
+                <li>Custom orders available</li>
+                <li>Fresh daily baking</li>
+                <li>Pre-order options</li>
+                <li>Seasonal specials</li>
               </ul>
             </div>
 

@@ -14,7 +14,6 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useCart } from "@/components/cart-context"
-import { createOrder } from "@/lib/database"
 import { toast } from "sonner"
 import { ShoppingCart, Plus, Minus, Trash2, CalendarIcon, Clock, User, Mail, Phone, MessageSquare } from "lucide-react"
 import { format } from "date-fns"
@@ -147,9 +146,29 @@ export function CartSidebar({ isOpen = false, onClose }: CartSidebarProps) {
         })),
       }
 
-      await createOrder(orderData)
+      const response = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create order')
+      }
 
       toast.success("Order Placed Successfully!")
+      clearCart()
+      setCustomerInfo({
+        name: "",
+        email: "",
+        phone: "",
+        specialInstructions: "",
+      })
+      setPickupDate(undefined)
+      setPickupTime("")
+      setShowCheckout(false)
       
       onClose?.()
       router.push("/checkout/success")

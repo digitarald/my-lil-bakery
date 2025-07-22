@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom"
-import { createDatabaseMocks } from "./__tests__/__mocks__/database"
+import { createDatabaseMocks, mockProductsWithCategory, mockCategories } from "./__tests__/__mocks__/database"
 
 // Mock the database module globally
 jest.mock("@/lib/database", () => createDatabaseMocks())
@@ -101,6 +101,47 @@ jest.mock("next/navigation", () => ({
 
 // Mock React (needed for the Image component mock)
 global.React = require("react")
+
+// Mock fetch API for components that make HTTP requests
+// Create database mocks once at module level to avoid repeated instantiation
+const dbMocks = createDatabaseMocks()
+const mockStatsPromise = dbMocks.getOrderStats()
+const mockOrdersPromise = dbMocks.getOrders()
+
+global.fetch = jest.fn((url) => {
+  // Determine which data to return based on URL
+  if (url.includes('/api/admin/products')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockProductsWithCategory)
+    })
+  } else if (url.includes('/api/products')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockProductsWithCategory)
+    })
+  } else if (url.includes('/api/categories')) {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockCategories)
+    })
+  } else if (url.includes('/api/orders')) {
+    return mockOrdersPromise.then(orders => ({
+      ok: true,
+      json: () => Promise.resolve(orders)
+    }))
+  } else if (url.includes('/api/admin/stats')) {
+    return mockStatsPromise.then(stats => ({
+      ok: true,
+      json: () => Promise.resolve(stats)
+    }))
+  } else {
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve([])
+    })
+  }
+})
 
 // Silence console errors in tests
 global.console = {

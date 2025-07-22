@@ -24,19 +24,11 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getAllProducts,
-  getOrders,
-  getOrderStats,
-  getCategories,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  updateOrderStatus,
-  type ProductWithCategory,
-  type OrderWithItems,
-  type OrderStats,
-  type Category,
+import type {
+  ProductWithCategory,
+  OrderWithItems,
+  OrderStats,
+  Category,
 } from "@/lib/database";
 
 export default function AdminDashboard() {
@@ -92,18 +84,31 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [productsData, categoriesData, ordersData, statsData] =
+      const [productsRes, categoriesRes, ordersRes, statsRes] =
         await Promise.all([
-          getAllProducts(),
-          getCategories(),
-          getOrders(),
-          getOrderStats(),
+          fetch('/api/admin/products'),
+          fetch('/api/categories'),
+          fetch('/api/orders'),
+          fetch('/api/admin/stats'),
         ]);
+
+      if (!productsRes.ok || !categoriesRes.ok || !ordersRes.ok || !statsRes.ok) {
+        throw new Error('Failed to fetch data')
+      }
+
+      const [productsData, categoriesData, ordersData, statsData] = await Promise.all([
+        productsRes.json(),
+        categoriesRes.json(),
+        ordersRes.json(),
+        statsRes.json(),
+      ]);
+
       setProducts(productsData as ProductWithCategory[]);
       setCategoryList(categoriesData);
       setOrders(ordersData as OrderWithItems[]);
       setStats(statsData as OrderStats);
     } catch (error) {
+      console.error('Error loading data:', error)
       toast.error("Error loading data. Please try refreshing the page.")
     } finally {
       setLoading(false)
@@ -127,7 +132,18 @@ export default function AdminDashboard() {
         minOrderTime: parseInt(newProduct.minOrderTime) || 0,
       };
 
-      await createProduct(productData);
+      const response = await fetch('/api/admin/products/manage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create product')
+      }
+
       toast.success(`${newProduct.name} has been added to the catalog.`)
       setNewProduct({
         name: "",
@@ -145,6 +161,7 @@ export default function AdminDashboard() {
       setIsAddingProduct(false)
       loadData()
     } catch (error) {
+      console.error('Error adding product:', error)
       toast.error("Error adding product. Please try again.")
     }
   }
@@ -155,6 +172,7 @@ export default function AdminDashboard() {
 
     try {
       const updateData = {
+        id: editingProduct.id,
         name: editingProduct.name,
         description: editingProduct.description,
         price: editingProduct.price,
@@ -166,11 +184,23 @@ export default function AdminDashboard() {
         inStock: editingProduct.inStock,
       };
 
-      await updateProduct(editingProduct.id, updateData);
+      const response = await fetch('/api/admin/products/manage', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update product')
+      }
+
       toast.success(`${editingProduct.name} has been updated.`)
       setEditingProduct(null)
       loadData()
     } catch (error) {
+      console.error('Error updating product:', error)
       toast.error("Error updating product. Please try again.")
     }
   }
@@ -179,10 +209,22 @@ export default function AdminDashboard() {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
-      await deleteProduct(id);
+      const response = await fetch('/api/admin/products/manage', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product')
+      }
+
       toast.success(`${name} has been removed from the catalog.`);
       loadData();
     } catch (error) {
+      console.error('Error deleting product:', error)
       toast.error("Error deleting product. Please try again.");
     }
   };
@@ -192,10 +234,22 @@ export default function AdminDashboard() {
     newStatus: string
   ) => {
     try {
-      await updateOrderStatus(orderId, newStatus);
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update order status')
+      }
+
       toast.success(`Order #${orderId.slice(-6)} status changed to ${newStatus}.`);
       loadData();
     } catch (error) {
+      console.error('Error updating order status:', error)
       toast.error("Error updating order status. Please try again.");
     }
   };
