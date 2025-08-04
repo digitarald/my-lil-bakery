@@ -3,6 +3,10 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 async function main() {
+  // Clear existing products to avoid duplicates
+  console.log("🧹 Clearing existing products...")
+  await prisma.product.deleteMany()
+  
   const cakesCategory = await prisma.category.upsert({
     where: { name: "Cakes" },
     update: {},
@@ -164,14 +168,9 @@ async function main() {
   ]
 
   for (const product of products) {
-    try {
-      await prisma.product.create({
-        data: product,
-      })
-    } catch (error) {
-      // Product might already exist, skip it
-      console.log(`Product ${product.name} already exists, skipping...`)
-    }
+    await prisma.product.create({
+      data: product,
+    })
   }
 
   // Create a demo admin user

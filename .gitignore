@@ -20,6 +20,12 @@ yarn-error.log*
 .env*
 !.env.example
 
+# database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
 # devcontainer local files
 .devcontainer/.env.devcontainer.local
 .devcontainer/docker-compose.override.yml
