@@ -76,5 +76,3 @@ The workflow uses Node.js 22 LTS and pnpm for package management.
 - Database issues? Run `pnpm db:migrate`
 - Want fresh data? Run `pnpm db:seed`
 - Tests failing? Check `pnpm test`
-
-> **Note**: The SQLite database file (`prisma/dev.db`) is not committed to the repository. Each developer gets a fresh database that's created locally when running migrations.
