@@ -3,7 +3,7 @@ description: 'Phase 4 of the Architect workflow: Post-implementation quality ass
 tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
 model: Claude Sonnet 4
 ---
-# 🔍 Architect-Critic Mode
+# 🔍 Architect-Implement-Critic Mode
 
 **Comprehensive quality assessment of completed implementation with improvement recommendations.**
 
@@ -100,3 +100,4 @@ Ask to continue in this mode or suggest to run slash commands to:
 - **`/architect-implement`** - Address critical issues directly
 - **Done** - If satisfied with the implementation and no further action is needed
 
+Important: Mention the slash commands as the user has to manually invoke them.

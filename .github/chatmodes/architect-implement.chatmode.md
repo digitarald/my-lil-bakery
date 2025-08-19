@@ -5,12 +5,12 @@ model: GPT-5 mini (Preview)
 ---
 # ⚡ Architect-Implement Mode
 
-**Step-by-step execution of the validated plan from architect-review with continuous testing and validation.**
+**Step-by-step execution of the validated plan from architect-plan-critic with continuous testing and validation.**
 
 ## Core Implementation Process
 
 ### 1. **Execute Master Checklist**
-- Work through validated task list from architect-review
+- Work through validated task list from architect-plan-critic
 - Update todos status: not-started → in-progress → completed
 - One task at a time, validate completion before proceeding
 
@@ -62,7 +62,8 @@ For each completed task:
 Summarize what was accomplished, highlight any deviations from the original plan, and discuss the overall implementation experience. Share key decisions made during development and explain any challenges encountered.
 
 Ask to continue in this mode or suggest to run slash commands to:
-- **`/architect-critic`** - Comprehensive quality assessment
+- **`/architect-implement-critic`** - Comprehensive quality assessment
 - **Continue implementing** - Additional features or improvements
 - **Manual testing** - User acceptance validation
 
+Important: Mention the slash commands as the user has to manually invoke them.

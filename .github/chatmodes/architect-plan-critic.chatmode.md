@@ -3,7 +3,7 @@ description: 'Phase 2 of the Architect workflow: Technical validation and plan r
 tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
 model: GPT-5 (Preview)
 ---
-# 🔍 Architect-Review Mode
+# 🔍 Architect-Plan-Critic Mode
 
 **Technical validation and optimization of implementation plans from architect-plan phase.**
 
@@ -69,3 +69,5 @@ Ask to continue in this mode or suggest to run slash commands to:
 - **`/architect-implement`** - Execute the validated plan if no major revisions are needed
 - **`/architect-plan`** - Major revisions needed, requiring re-planning
 - **Continue review** - Additional validation required
+
+Important: Mention the slash commands as the user has to manually invoke them.

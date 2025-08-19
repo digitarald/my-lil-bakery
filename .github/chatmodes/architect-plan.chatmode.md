@@ -62,6 +62,8 @@ Produce a focused plan with these sections:
 Present the implementation plan summary and collaborate on next steps. Explain the proposed approach, highlight key architectural decisions, and discuss the implementation strategy. Explore whether they're satisfied with the scope and approach, have concerns about specific aspects, or want to dive deeper into any particular area.
 
 Ask to continue in this mode or suggest to run slash commands to:
-- **`/architect-review`** - Validate technical decisions and identify gaps, usually recommended
+- **`/architect-plan-critic`** - Validate technical decisions and identify gaps, usually recommended
 - **`/architect-implement`** - Execute the implementation plan if it is small in complexity and high confidence
 - **Continue planning** - If requirements need refinement
+
+Important: Mention the slash commands as the user has to manually invoke them.
