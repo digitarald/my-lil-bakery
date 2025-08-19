@@ -50,6 +50,8 @@ When you seed, you get:
 - 10 sample bakery products across our categories
 - Test admin account: `admin@sweetdreamsbakery.com`
 
+Note: demo admin has no seeded password; the dev-only `test.admin@localhost.dev` gets a password only when `NODE_ENV !== 'production'` (override with `SEED_ADMIN_PASSWORD`).
+
 ## Project Layout
 
 ```
