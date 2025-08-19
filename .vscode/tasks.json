@@ -21,37 +21,6 @@
 			"runOptions": {
 				"runOn": "folderOpen"
 			}
-		},
-		{
-			"label": "Run Tests",
-			"type": "shell",
-			"command": "pnpm",
-			"args": ["test"],
-			"group": {
-				"kind": "test",
-				"isDefault": true
-			},
-			"problemMatcher": [],
-			"presentation": {
-				"echo": true,
-				"reveal": "always",
-				"focus": false,
-				"panel": "shared"
-			}
-		},
-		{
-			"label": "Database Migration",
-			"type": "shell",
-			"command": "pnpm",
-			"args": ["db:migrate"],
-			"group": "build",
-			"problemMatcher": [],
-			"presentation": {
-				"echo": true,
-				"reveal": "always",
-				"focus": false,
-				"panel": "shared"
-			}
 		}
 	]
 }
