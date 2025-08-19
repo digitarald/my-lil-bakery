@@ -93,11 +93,13 @@ describe('Validation Schemas', () => {
 
   describe('checkoutSchema', () => {
     it('should validate correct checkout data', () => {
+      // use a date in the future relative to test run time
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
       const validData = {
         customerName: 'John Doe',
         customerEmail: 'john@example.com',
         customerPhone: '15551234567',
-        pickupDate: new Date('2025-07-25'),
+        pickupDate: tomorrow,
         pickupTime: '14:00',
         specialInstructions: 'Please add extra frosting'
       }
@@ -107,11 +109,12 @@ describe('Validation Schemas', () => {
     })
 
     it('should reject invalid email in checkout', () => {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
       const invalidEmailData = {
         customerName: 'John Doe',
         customerEmail: 'invalid-email',
         customerPhone: '+1-555-123-4567',
-        pickupDate: '2025-07-25',
+        pickupDate: tomorrow,
         pickupTime: '14:00'
       }
       
@@ -120,11 +123,12 @@ describe('Validation Schemas', () => {
     })
 
     it('should reject invalid phone format', () => {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
       const invalidPhoneData = {
         customerName: 'John Doe',
         customerEmail: 'john@example.com',
         customerPhone: 'abc-def-ghij', // Invalid - contains letters
-        pickupDate: new Date('2025-07-25'),
+        pickupDate: tomorrow,
         pickupTime: '14:00'
       }
       
@@ -133,11 +137,13 @@ describe('Validation Schemas', () => {
     })
 
     it('should reject past pickup date', () => {
+      // use a date in the past relative to test run time
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
       const pastDateData = {
         customerName: 'John Doe',
         customerEmail: 'john@example.com',
         customerPhone: '15551234567',
-        pickupDate: new Date('2020-01-01'),
+        pickupDate: yesterday,
         pickupTime: '14:00'
       }
       
