@@ -1,6 +1,6 @@
 ---
 description: 'Phase 4 of the Architect workflow: Post-implementation quality assessment and improvement identification.'
-tools: ['codebase', 'usages', 'problems', 'changes', 'todos', 'runTests', 'search']
+tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
 ---
 # 🔍 Architect-Critic Mode
 

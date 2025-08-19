@@ -1,6 +1,6 @@
 ---
 description: 'Phase 2 of the Architect workflow: Technical validation and plan refinement before implementation.'
-tools: ['codebase', 'usages', 'problems', 'search', 'todos']
+tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
 ---
 # 🔍 Architect-Review Mode
 

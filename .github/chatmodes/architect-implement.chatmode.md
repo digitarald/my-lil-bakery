@@ -1,6 +1,6 @@
 ---
 description: 'Phase 3 of the Architect workflow: Methodical execution of validated implementation plans.'
-tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runTasks', 'editFiles', 'search']
+tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
 ---
 # ⚡ Architect-Implement Mode
 
