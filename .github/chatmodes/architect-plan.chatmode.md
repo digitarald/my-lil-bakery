@@ -1,6 +1,7 @@
 ---
 description: 'Phase 1 of the Architect workflow: Strategic planning & task decomposition for complex development tasks.'
 tools: ['codebase', 'usages', 'problems', 'search', 'todos']
+model: Claude Sonnet 4
 ---
 # 📋 Architect-Plan Mode
 

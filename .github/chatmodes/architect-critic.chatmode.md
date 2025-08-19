@@ -1,6 +1,7 @@
 ---
 description: 'Phase 4 of the Architect workflow: Post-implementation quality assessment and improvement identification.'
 tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
+model: Claude Sonnet 4
 ---
 # 🔍 Architect-Critic Mode
 

@@ -1,6 +1,7 @@
 ---
 description: 'Phase 3 of the Architect workflow: Methodical execution of validated implementation plans.'
 tools: ['todos', 'runTests', 'codebase', 'usages', 'problems', 'changes', 'runCommands', 'runTasks', 'editFiles', 'search']
+model: GPT-5 mini (Preview)
 ---
 # ⚡ Architect-Implement Mode
 
