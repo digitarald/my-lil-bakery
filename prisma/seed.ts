@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client"
+import { hashPassword } from "../lib/password"
 
 const prisma = new PrismaClient()
 
@@ -174,6 +175,7 @@ async function main() {
   }
 
   // Create a demo admin user
+  // Demo admin (no password set here). Keep demo account email but do not seed a password.
   await prisma.user.upsert({
     where: {
       email: "admin@sweetdreamsbakery.com",
@@ -187,20 +189,35 @@ async function main() {
   })
 
   // Create a secret test admin account for local development
+  // Create a secret test admin account for local development only.
+  // Only assign a password in non-production environments. Use `SEED_ADMIN_PASSWORD` env var or default.
+  const defaultAdminPassword = process.env.SEED_ADMIN_PASSWORD ?? "admin123"
+
+  const testAdminCreate: any = {
+    name: "Test Admin",
+    email: "test.admin@localhost.dev",
+    role: "admin",
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    testAdminCreate.password = await hashPassword(defaultAdminPassword)
+  }
+
   await prisma.user.upsert({
     where: {
       email: "test.admin@localhost.dev",
     },
     update: {},
-    create: {
-      name: "Test Admin",
-      email: "test.admin@localhost.dev",
-      role: "admin",
-    },
+    create: testAdminCreate,
   })
 
   console.log("Database seeded successfully!")
-  console.log("🔐 Test admin account created: test.admin@localhost.dev (password: admin123)")
+  if (process.env.NODE_ENV !== "production") {
+    const shownPassword = process.env.SEED_ADMIN_PASSWORD ?? defaultAdminPassword
+    console.log(`🔐 Test admin account created: test.admin@localhost.dev (password: ${shownPassword})`)
+  } else {
+    console.log("🔐 Test admin account created: test.admin@localhost.dev (no password set in production)")
+  }
 }
 
 main()
