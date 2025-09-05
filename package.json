@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "prebuild": "pnpm approve-builds -y && pnpm db:generate",
+    "prebuild": "pnpm db:generate",
     "build": "next build",
     "build:analyze": "cross-env ANALYZE=true next build",
     "db:generate": "prisma generate",
