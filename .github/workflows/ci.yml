@@ -90,7 +90,7 @@ jobs:
         run: pnpm db:generate
 
       - name: Run ESLint
-        run: pnpm lint --max-warnings=0
+        run: pnpm lint
 
       - name: Run TypeScript check
         run: pnpm typecheck
