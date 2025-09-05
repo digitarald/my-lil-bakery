@@ -10,6 +10,9 @@ Our online bakery platform - built for Sweet Dreams Bakery team.
 # Install dependencies
 pnpm install
 
+# Copy environment variables template
+cp .env.example .env
+
 # Setup database & seed with our products
 pnpm db:migrate && pnpm db:seed
 
