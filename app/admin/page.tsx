@@ -626,7 +626,7 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {order.orderItems?.map((item) => (
+                            {order.orderItems?.map((item: OrderWithItems["orderItems"][number]) => (
                               <div key={item.id} className="text-sm">
                                 {item.product?.name} x{item.quantity}
                               </div>
