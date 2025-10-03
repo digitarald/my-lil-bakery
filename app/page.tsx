@@ -14,6 +14,7 @@ import { CartSidebar } from "@/components/cart-sidebar"
 import type { ProductWithCategory } from "@/lib/database"
 import { AuthButton } from "@/components/auth-button";
 import { useSession } from "next-auth/react";
+import { FavoriteButton } from "@/components/favorite-button"
 
 export default function HomePage() {
   const { addToCart, cartItems, toggleCart, isCartOpen } = useCart()
@@ -24,6 +25,7 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
   const [loading, setLoading] = useState(true)
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -45,6 +47,28 @@ export default function HomePage() {
 
     loadProducts()
   }, [])
+
+  // Load user favorites
+  useEffect(() => {
+    const loadFavorites = async () => {
+      if (!session?.user?.id) {
+        setFavoriteIds(new Set())
+        return
+      }
+
+      try {
+        const response = await fetch('/api/favorites?idsOnly=true')
+        if (response.ok) {
+          const data = await response.json()
+          setFavoriteIds(new Set(data.favoriteIds))
+        }
+      } catch (error) {
+        console.error('Error loading favorites:', error)
+      }
+    }
+
+    loadFavorites()
+  }, [session])
 
   useEffect(() => {
     const filtered = products.filter((product) => {
@@ -81,6 +105,18 @@ export default function HomePage() {
   const featuredProducts = products
     .filter((p) => p.category.name.toLowerCase() === "cakes")
     .slice(0, 3);
+
+  const handleFavoriteChange = (productId: string, isFavorited: boolean) => {
+    setFavoriteIds((prev) => {
+      const newSet = new Set(prev)
+      if (isFavorited) {
+        newSet.add(productId)
+      } else {
+        newSet.delete(productId)
+      }
+      return newSet
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50">
@@ -318,6 +354,14 @@ export default function HomePage() {
                     {!product.inStock && (
                       <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">Out of Stock</Badge>
                     )}
+                    <div className="absolute top-2 right-2">
+                      <FavoriteButton
+                        productId={product.id}
+                        productName={product.name}
+                        isFavorited={favoriteIds.has(product.id)}
+                        onFavoriteChange={(isFavorited) => handleFavoriteChange(product.id, isFavorited)}
+                      />
+                    </div>
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold mb-1 line-clamp-1">{product.name}</h3>

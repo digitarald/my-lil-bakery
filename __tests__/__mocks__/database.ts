@@ -3,7 +3,7 @@
  * This file provides DRY mock factories and mock data for database operations
  */
 
-import type { Product, Category, User, Order } from "@prisma/client"
+import type { Product, Category, User, Order, Favorite } from "@prisma/client"
 
 // Mock data factories
 export const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
@@ -64,6 +64,14 @@ export const createMockOrder = (overrides: Partial<Order> = {}): Order => ({
   notes: null,
   createdAt: new Date("2024-01-01"),
   updatedAt: new Date("2024-01-01"),
+  ...overrides,
+})
+
+export const createMockFavorite = (overrides: Partial<Favorite> = {}): Favorite => ({
+  id: "fav1",
+  userId: "user1",
+  productId: "1",
+  createdAt: new Date("2024-01-01"),
   ...overrides,
 })
 
@@ -185,6 +193,21 @@ export const createDatabaseMocks = () => ({
   createCategory: jest.fn().mockResolvedValue(createMockCategory()),
   updateCategory: jest.fn().mockResolvedValue(createMockCategory()),
   deleteCategory: jest.fn().mockResolvedValue(createMockCategory()),
+
+  // Favorite operations
+  addFavorite: jest.fn().mockResolvedValue({
+    ...createMockFavorite(),
+    product: mockProductsWithCategory[0],
+  }),
+  removeFavorite: jest.fn().mockResolvedValue({ count: 1 }),
+  getFavoritesByUser: jest.fn().mockResolvedValue([
+    {
+      ...createMockFavorite(),
+      product: mockProductsWithCategory[0],
+    },
+  ]),
+  isFavorite: jest.fn().mockResolvedValue(false),
+  getUserFavoriteIds: jest.fn().mockResolvedValue(["1"]),
 })
 
 // Default database mocks

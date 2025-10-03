@@ -34,19 +34,20 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String     @unique
   emailVerified DateTime?
   image         String?
   phone         String?
-  role          String    @default("customer")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          String     @default("customer")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   password      String?
   accounts      Account[]
   orders        Order[]
   sessions      Session[]
+  favorites     Favorite[]
 }
 
 model VerificationToken {
@@ -84,6 +85,7 @@ model Product {
   updatedAt    DateTime    @updatedAt
   orderItems   OrderItem[]
   category     Category    @relation(fields: [categoryId], references: [id])
+  favorites    Favorite[]
 }
 
 model Order {
@@ -115,4 +117,15 @@ model OrderItem {
   createdAt DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id])
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
 }

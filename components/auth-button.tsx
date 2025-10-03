@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, LogOut, Settings, ShoppingBag } from "lucide-react"
+import { User, LogOut, Settings, ShoppingBag, Heart } from "lucide-react"
 import Link from "next/link"
 
 export function AuthButton() {
@@ -69,6 +69,12 @@ export function AuthButton() {
           <Link href="/dashboard/orders" className="flex items-center">
             <ShoppingBag className="mr-2 h-4 w-4" />
             <span>My Orders</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/favorites" className="flex items-center">
+            <Heart className="mr-2 h-4 w-4" />
+            <span>My Favorites</span>
           </Link>
         </DropdownMenuItem>
         {(session.user as any)?.role === "admin" && (
