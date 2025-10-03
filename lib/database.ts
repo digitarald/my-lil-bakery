@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import type { Product, Category, User, Order, OrderItem } from "@prisma/client"
 
 // Re-export Prisma types
-export type { Product, Category, User, Order, OrderItem } from "@prisma/client"
+export type { Product, Category, User, Order, OrderItem, Favorite } from "@prisma/client"
 
 // Type exports
 export type ProductWithCategory = Product & {
@@ -291,5 +291,67 @@ export async function getOrderStats(): Promise<OrderStats> {
     totalRevenue: totalRevenue._sum.total || 0,
     pendingOrders,
   }
+}
+
+// Favorite operations
+export async function addFavorite(userId: string, productId: string) {
+  return await prisma.favorite.create({
+    data: {
+      userId,
+      productId,
+    },
+    include: {
+      product: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  })
+}
+
+export async function removeFavorite(userId: string, productId: string) {
+  return await prisma.favorite.deleteMany({
+    where: {
+      userId,
+      productId,
+    },
+  })
+}
+
+export async function getFavoritesByUser(userId: string) {
+  return await prisma.favorite.findMany({
+    where: { userId },
+    include: {
+      product: {
+        include: {
+          category: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  })
+}
+
+export async function isFavorite(userId: string, productId: string) {
+  const favorite = await prisma.favorite.findFirst({
+    where: {
+      userId,
+      productId,
+    },
+  })
+  return favorite !== null
+}
+
+export async function getUserFavoriteIds(userId: string): Promise<string[]> {
+  const favorites = await prisma.favorite.findMany({
+    where: { userId },
+    select: {
+      productId: true,
+    },
+  })
+  return favorites.map((f: any) => f.productId)
 }
 
