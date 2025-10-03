@@ -51,7 +51,7 @@ export default function HomePage() {
   // Load user favorites
   useEffect(() => {
     const loadFavorites = async () => {
-      if (!session?.user?.id) {
+      if (!session?.user) {
         setFavoriteIds(new Set())
         return
       }

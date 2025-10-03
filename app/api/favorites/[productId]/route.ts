@@ -4,11 +4,11 @@ import { authOptions } from "@/lib/auth"
 import { removeFavorite } from "@/lib/database"
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { productId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions) as any
 
     if (!session?.user?.id) {
       return NextResponse.json(

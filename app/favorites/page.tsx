@@ -22,7 +22,7 @@ interface FavoriteWithProduct {
 }
 
 export default function FavoritesPage() {
-  const { data: session, status } = useSession()
+  const { data: _session, status } = useSession()
   const router = useRouter()
   const { addToCart } = useCart()
   const [favorites, setFavorites] = useState<FavoriteWithProduct[]>([])

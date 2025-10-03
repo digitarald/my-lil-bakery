@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import type { Product, Category, User, Order, OrderItem, Favorite } from "@prisma/client"
+import type { Product, Category, User, Order, OrderItem } from "@prisma/client"
 
 // Re-export Prisma types
 export type { Product, Category, User, Order, OrderItem, Favorite } from "@prisma/client"
@@ -345,13 +345,13 @@ export async function isFavorite(userId: string, productId: string) {
   return favorite !== null
 }
 
-export async function getUserFavoriteIds(userId: string) {
+export async function getUserFavoriteIds(userId: string): Promise<string[]> {
   const favorites = await prisma.favorite.findMany({
     where: { userId },
     select: {
       productId: true,
     },
   })
-  return favorites.map((f) => f.productId)
+  return favorites.map((f: any) => f.productId)
 }
 
