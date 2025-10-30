@@ -115,6 +115,12 @@ global.fetch = jest.fn((url) => {
       ok: true,
       json: () => Promise.resolve(mockProductsWithCategory)
     })
+  } else if (url.includes('/api/products/featured')) {
+    // Handle featured products endpoint
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve(mockProductsWithCategory.filter(p => p.featured))
+    })
   } else if (url.includes('/api/products')) {
     return Promise.resolve({
       ok: true,

@@ -19,6 +19,7 @@ export default function HomePage() {
   const { addToCart, cartItems, toggleCart, isCartOpen } = useCart()
   const { data: session } = useSession()
   const [products, setProducts] = useState<ProductWithCategory[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithCategory[]>([])
   const [filteredProducts, setFilteredProducts] = useState<ProductWithCategory[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -43,7 +44,21 @@ export default function HomePage() {
       }
     }
 
+    const loadFeaturedProducts = async () => {
+      try {
+        const response = await fetch('/api/products/featured')
+        if (!response.ok) {
+          throw new Error('Failed to fetch featured products')
+        }
+        const featuredData = await response.json()
+        setFeaturedProducts(featuredData.slice(0, 4))
+      } catch (error) {
+        console.error('Error loading featured products:', error)
+      }
+    }
+
     loadProducts()
+    loadFeaturedProducts()
   }, [])
 
   useEffect(() => {
@@ -78,9 +93,20 @@ export default function HomePage() {
   ];
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
-  const featuredProducts = products
-    .filter((p) => p.category.name.toLowerCase() === "cakes")
-    .slice(0, 3);
+  // Polaroid positioning classes
+  const polaroidPositions = [
+    'polaroid-position-1',
+    'polaroid-position-2', 
+    'polaroid-position-3',
+    'polaroid-position-4'
+  ]
+  
+  const polaroidAnimations = [
+    'polaroid-animate-1',
+    'polaroid-animate-2',
+    'polaroid-animate-3',
+    'polaroid-animate-4'
+  ]
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50">
@@ -170,7 +196,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products - Polaroid Showcase */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
@@ -183,54 +209,63 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {loading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <Card
-                    key={i}
-                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse"
-                  >
-                    <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
-                    <CardContent className="p-6">
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                    </CardContent>
-                  </Card>
-                ))
-              : featuredProducts.map((product) => (
-                  <Card
-                    key={product.id}
-                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
-                  >
-                    <div className="relative overflow-hidden rounded-t-lg">
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[500px]">
+              <div className="text-gray-500">Loading featured products...</div>
+            </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No featured products available at the moment.</p>
+            </div>
+          ) : (
+            <div className="polaroid-showcase">
+              {featuredProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  className={`polaroid-card ${polaroidPositions[index % polaroidPositions.length]}`}
+                  role="article"
+                  aria-label={`Featured product: ${product.name}`}
+                  tabIndex={0}
+                >
+                  <div className="polaroid-inner">
+                    {/* Front face */}
+                    <div className={`polaroid-front ${polaroidAnimations[index % polaroidAnimations.length]}`}>
                       <Image
                         src={product.image || "/placeholder.svg"}
                         alt={product.name}
-                        width={300}
-                        height={300}
-                        className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
+                        width={280}
+                        height={280}
+                        className="polaroid-image"
                       />
-                      {product.preOrder && (
-                        <Badge className="absolute top-3 left-3 bg-purple-500 text-white">Pre-Order</Badge>
-                      )}
+                      <div className="polaroid-caption">{product.name}</div>
                     </div>
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-lg mb-2">{product.name}</h3>
-                      <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-pink-600">${product.price}</span>
+
+                    {/* Back face */}
+                    <div className="polaroid-back">
+                      <div className="polaroid-back-content">
+                        <p>{product.description || "Handcrafted with love and premium ingredients"}</p>
+                        <div className="price">${product.price}</div>
+                        {product.preOrder && (
+                          <p className="text-xs text-purple-600 flex items-center justify-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Min {product.minOrderTime}h notice
+                          </p>
+                        )}
                         <Button
                           onClick={() => addToCart(product)}
-                          className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
+                          className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 w-full mt-2"
+                          disabled={!product.inStock}
+                          aria-label={`Add ${product.name} to cart`}
                         >
-                          Add to Cart
+                          {product.inStock ? "Add to Cart" : "Out of Stock"}
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

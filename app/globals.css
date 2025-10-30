@@ -88,3 +88,283 @@ html {
   outline: 2px solid #ec4899;
   outline-offset: 2px;
 }
+
+/* Polaroid card animations and styles */
+@keyframes gentle-rotate-1 {
+  0%, 100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes gentle-rotate-2 {
+  0%, 100% {
+    transform: rotate(1deg);
+  }
+  50% {
+    transform: rotate(-3deg);
+  }
+}
+
+@keyframes gentle-rotate-3 {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(1.5deg);
+  }
+}
+
+@keyframes gentle-rotate-4 {
+  0%, 100% {
+    transform: rotate(2.5deg);
+  }
+  50% {
+    transform: rotate(-2deg);
+  }
+}
+
+/* Polaroid showcase container */
+.polaroid-showcase {
+  position: relative;
+  min-height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+/* Individual polaroid card wrapper with 3D perspective */
+.polaroid-card {
+  position: absolute;
+  width: 280px;
+  height: 380px;
+  perspective: 1000px;
+  cursor: pointer;
+  transition: z-index 0s 0.3s;
+}
+
+.polaroid-card:hover {
+  z-index: 10 !important;
+  transition: z-index 0s 0s;
+}
+
+/* Inner container for flip animation */
+.polaroid-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.polaroid-card:hover .polaroid-inner {
+  transform: rotateY(180deg);
+}
+
+/* Pause rotation animation on hover */
+.polaroid-card:hover .polaroid-front {
+  animation-play-state: paused;
+}
+
+/* Front and back faces */
+.polaroid-front,
+.polaroid-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1);
+  padding: 16px 16px 48px 16px;
+  will-change: transform;
+}
+
+.polaroid-front {
+  transform-style: preserve-3d;
+}
+
+/* Enhanced hover effects for front face */
+.polaroid-card:hover .polaroid-front {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Back face is flipped */
+.polaroid-back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 24px;
+}
+
+/* Polaroid image */
+.polaroid-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 2px;
+  background: #f5f5f5;
+}
+
+/* Caption on polaroid bottom */
+.polaroid-caption {
+  position: absolute;
+  bottom: 8px;
+  left: 16px;
+  right: 16px;
+  text-align: center;
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive, sans-serif;
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Scattered positioning classes */
+.polaroid-position-1 {
+  transform: rotate(-5deg) translateX(-120px) translateY(20px);
+  z-index: 1;
+}
+
+.polaroid-position-2 {
+  transform: rotate(3deg) translateX(0) translateY(-10px);
+  z-index: 2;
+}
+
+.polaroid-position-3 {
+  transform: rotate(-3deg) translateX(120px) translateY(30px);
+  z-index: 1;
+}
+
+.polaroid-position-4 {
+  transform: rotate(8deg) translateX(-60px) translateY(50px);
+  z-index: 3;
+}
+
+/* Animation classes with staggered delays */
+.polaroid-animate-1 {
+  animation: gentle-rotate-1 5s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.polaroid-animate-2 {
+  animation: gentle-rotate-2 6s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.polaroid-animate-3 {
+  animation: gentle-rotate-3 5.5s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.polaroid-animate-4 {
+  animation: gentle-rotate-4 6.5s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+/* Hover lift effect */
+.polaroid-card:hover {
+  transform: translateY(-15px) scale(1.08);
+  transition: transform 0.3s ease-out;
+}
+
+/* Back side content styles */
+.polaroid-back-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.polaroid-back h3 {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+}
+
+.polaroid-back p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.polaroid-back .price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ec4899;
+  margin: 8px 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .polaroid-showcase {
+    position: static;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 20px;
+  }
+
+  .polaroid-card {
+    position: static;
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    margin: 0 auto;
+    perspective: none;
+  }
+
+  .polaroid-position-1,
+  .polaroid-position-2,
+  .polaroid-position-3,
+  .polaroid-position-4 {
+    transform: none;
+  }
+
+  /* Disable 3D flip on mobile, show info below instead */
+  .polaroid-card:hover .polaroid-inner {
+    transform: none;
+  }
+
+  .polaroid-card:hover {
+    transform: none;
+  }
+
+  .polaroid-inner {
+    position: relative;
+    height: auto;
+  }
+
+  .polaroid-front,
+  .polaroid-back {
+    position: relative;
+    backface-visibility: visible;
+    -webkit-backface-visibility: visible;
+    transform: none !important;
+  }
+
+  .polaroid-back {
+    display: block;
+    padding: 16px;
+    margin-top: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Disable rotation animations on mobile */
+  .polaroid-animate-1,
+  .polaroid-animate-2,
+  .polaroid-animate-3,
+  .polaroid-animate-4 {
+    animation: none;
+  }
+}
