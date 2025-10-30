@@ -19,11 +19,13 @@ export default function HomePage() {
   const { addToCart, cartItems, toggleCart, isCartOpen } = useCart()
   const { data: session } = useSession()
   const [products, setProducts] = useState<ProductWithCategory[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithCategory[]>([])
   const [filteredProducts, setFilteredProducts] = useState<ProductWithCategory[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [sortBy, setSortBy] = useState("name")
   const [loading, setLoading] = useState(true)
+  const [pausedCards, setPausedCards] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -35,6 +37,8 @@ export default function HomePage() {
         const productsData = await response.json()
         setProducts(productsData)
         setFilteredProducts(productsData)
+        // Set featured products from the loaded data
+        setFeaturedProducts(productsData.filter((p: ProductWithCategory) => p.featured && p.inStock).slice(0, 4))
       } catch (error) {
         console.error('Error loading products:', error)
         // Silently fail - user will see loading state
@@ -78,9 +82,21 @@ export default function HomePage() {
   ];
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
-  const featuredProducts = products
-    .filter((p) => p.category.name.toLowerCase() === "cakes")
-    .slice(0, 3);
+  const handleMouseEnter = (index: number) => {
+    setPausedCards(prev => {
+      const next = new Set(prev)
+      next.add(index)
+      return next
+    })
+  }
+
+  const handleMouseLeave = (index: number) => {
+    setPausedCards(prev => {
+      const next = new Set(prev)
+      next.delete(index)
+      return next
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-cream-50 to-yellow-50">
@@ -170,7 +186,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products - Auto-Flip Grid */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
@@ -183,52 +199,89 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="polaroid-grid">
             {loading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <Card
-                    key={i}
-                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse"
-                  >
-                    <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
-                    <CardContent className="p-6">
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                    </CardContent>
-                  </Card>
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="polaroid-wrapper">
+                    <Card className="bg-white border-8 border-white shadow-2xl hover:shadow-3xl transition-all duration-300 animate-pulse">
+                      <div className="aspect-square bg-gray-200"></div>
+                      <CardContent className="p-6">
+                        <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                        <div className="h-8 bg-gray-200 rounded"></div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 ))
-              : featuredProducts.map((product) => (
-                  <Card
+              : featuredProducts.map((product, index) => (
+                  <div
                     key={product.id}
-                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
+                    className="polaroid-wrapper"
+                    onMouseEnter={() => handleMouseEnter(index)}
+                    onMouseLeave={() => handleMouseLeave(index)}
+                    onFocus={() => handleMouseEnter(index)}
+                    onBlur={() => handleMouseLeave(index)}
+                    tabIndex={0}
+                    role="article"
+                    aria-label={`Featured product: ${product.name}`}
                   >
-                    <div className="relative overflow-hidden rounded-t-lg">
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        width={300}
-                        height={300}
-                        className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {product.preOrder && (
-                        <Badge className="absolute top-3 left-3 bg-purple-500 text-white">Pre-Order</Badge>
-                      )}
+                    <div className={`auto-flip-card ${pausedCards.has(index) ? 'paused' : ''}`}>
+                      {/* Front Face - Product Photo */}
+                      <Card className="polaroid-face bg-white border-8 border-white shadow-2xl hover:shadow-3xl transition-all duration-300">
+                        <div className="relative overflow-hidden">
+                          <Image
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            width={400}
+                            height={400}
+                            className="w-full aspect-square object-cover"
+                          />
+                          {product.preOrder && (
+                            <Badge className="absolute top-3 left-3 bg-purple-500 text-white">Pre-Order</Badge>
+                          )}
+                        </div>
+                        <CardContent className="p-4 text-center">
+                          <p className="font-handwriting text-gray-700 text-lg" style={{ fontFamily: 'cursive' }}>
+                            {product.name}
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Back Face - Product Details */}
+                      <Card className="polaroid-face polaroid-back bg-gradient-to-br from-pink-50 to-purple-50 border-8 border-white shadow-2xl">
+                        <CardContent className="p-6 flex flex-col h-full justify-between">
+                          <div>
+                            <h3 className="font-bold text-xl mb-3 text-gray-800">{product.name}</h3>
+                            <p className="text-gray-600 text-sm mb-4 line-clamp-3">{product.description}</p>
+                            {product.preOrder && (
+                              <p className="text-xs text-purple-600 mb-3 flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Min {product.minOrderTime}h notice required
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <Badge className="bg-pink-500 text-white text-lg px-3 py-1">
+                                ${product.price}
+                              </Badge>
+                              {!product.inStock && (
+                                <Badge className="bg-red-500 text-white text-xs">Out of Stock</Badge>
+                              )}
+                            </div>
+                            <Button
+                              onClick={() => addToCart(product)}
+                              disabled={!product.inStock}
+                              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50"
+                              size="sm"
+                            >
+                              {product.inStock ? "Add to Cart" : "Out of Stock"}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-lg mb-2">{product.name}</h3>
-                      <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-pink-600">${product.price}</span>
-                        <Button
-                          onClick={() => addToCart(product)}
-                          className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                        >
-                          Add to Cart
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  </div>
                 ))}
           </div>
         </div>

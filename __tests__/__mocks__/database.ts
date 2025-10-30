@@ -74,6 +74,7 @@ export const mockProducts: Product[] = [
     name: "Rainbow Cupcakes",
     price: 4.99,
     categoryId: "cupcakes",
+    featured: true,
   }),
   createMockProduct({
     id: "2",
@@ -87,6 +88,14 @@ export const mockProducts: Product[] = [
     name: "Chocolate Chip Cookies",
     price: 12.99,
     categoryId: "cookies",
+    featured: true,
+  }),
+  createMockProduct({
+    id: "4",
+    name: "Blueberry Muffins",
+    price: 8.99,
+    categoryId: "pastries",
+    featured: true,
   }),
 ]
 
@@ -102,6 +111,10 @@ export const mockCategories: Category[] = [
   createMockCategory({
     id: "cookies",
     name: "Cookies",
+  }),
+  createMockCategory({
+    id: "pastries",
+    name: "Pastries",
   }),
 ]
 
