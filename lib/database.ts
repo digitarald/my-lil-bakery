@@ -46,7 +46,7 @@ export async function getFeaturedProducts() {
     include: {
       category: true,
     },
-    take: 6,
+    take: 4,
   })
 }
 
