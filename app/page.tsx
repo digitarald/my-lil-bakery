@@ -241,7 +241,7 @@ export default function HomePage() {
                           )}
                         </div>
                         <CardContent className="p-4 text-center">
-                          <p className="font-handwriting text-gray-700 text-lg" style={{ fontFamily: 'cursive' }}>
+                          <p className="font-handwriting text-gray-700 text-lg">
                             {product.name}
                           </p>
                         </CardContent>

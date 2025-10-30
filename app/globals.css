@@ -146,20 +146,20 @@ html {
   transform-style: preserve-3d;
 }
 
-/* Stagger delays for wave effect */
-.auto-flip-card:nth-child(1) {
+/* Stagger delays for wave effect - target the card within wrapper */
+.polaroid-wrapper:nth-child(1) .auto-flip-card {
   animation-delay: 0s;
 }
 
-.auto-flip-card:nth-child(2) {
+.polaroid-wrapper:nth-child(2) .auto-flip-card {
   animation-delay: 2s;
 }
 
-.auto-flip-card:nth-child(3) {
+.polaroid-wrapper:nth-child(3) .auto-flip-card {
   animation-delay: 4s;
 }
 
-.auto-flip-card:nth-child(4) {
+.polaroid-wrapper:nth-child(4) .auto-flip-card {
   animation-delay: 6s;
 }
 
@@ -205,11 +205,21 @@ html {
   transform: translateY(30px);
 }
 
-.polaroid-wrapper:hover:nth-child(1),
-.polaroid-wrapper:hover:nth-child(2),
-.polaroid-wrapper:hover:nth-child(3),
-.polaroid-wrapper:hover:nth-child(4) {
+/* Preserve stagger positioning on hover while adding hover effects */
+.polaroid-wrapper:nth-child(1):hover {
   transform: translateY(-8px) scale(1.02);
+}
+
+.polaroid-wrapper:nth-child(2):hover {
+  transform: translateY(12px) scale(1.02);
+}
+
+.polaroid-wrapper:nth-child(3):hover {
+  transform: translateY(2px) scale(1.02);
+}
+
+.polaroid-wrapper:nth-child(4):hover {
+  transform: translateY(22px) scale(1.02);
 }
 
 /* Respect reduced motion preferences */
