@@ -88,3 +88,270 @@ html {
   outline: 2px solid #ec4899;
   outline-offset: 2px;
 }
+
+/* Polaroid Carousel Styles */
+.polaroid-deck-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  min-height: 600px;
+  perspective: 1500px;
+}
+
+@media (min-width: 768px) {
+  .polaroid-deck-container {
+    min-height: 700px;
+    max-width: 600px;
+  }
+}
+
+.polaroid-deck {
+  position: relative;
+  width: 100%;
+  height: 550px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .polaroid-deck {
+    height: 600px;
+  }
+}
+
+.polaroid-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  transition: all 0.5s ease-in-out;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  outline: none;
+}
+
+.polaroid-card:focus-visible {
+  outline: 3px solid #ec4899;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.polaroid-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.polaroid-card.flipped .polaroid-card-inner {
+  transform: rotateY(180deg);
+}
+
+.polaroid-card-front,
+.polaroid-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.polaroid-card-back {
+  transform: rotateY(180deg);
+}
+
+.polaroid-image {
+  flex: 1;
+  background: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polaroid-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.polaroid-caption {
+  padding: 1rem 0.5rem 0.5rem;
+  text-align: center;
+}
+
+.polaroid-text {
+  font-family: 'Caveat', cursive, system-ui, -apple-system, sans-serif;
+  font-size: 1.5rem;
+  color: #333;
+  margin: 0;
+}
+
+.polaroid-back-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Active card - centered and at full scale */
+.polaroid-card.active {
+  z-index: 10;
+  transform: translate(0, 0) rotate(0deg) scale(1);
+  filter: brightness(1);
+  pointer-events: auto;
+}
+
+/* Next card - slightly offset to the right */
+.polaroid-card.next {
+  z-index: 8;
+  transform: translate(10px, 10px) rotate(2deg) scale(0.95);
+  filter: brightness(0.9);
+  pointer-events: none;
+}
+
+/* Previous card - slightly offset to the left */
+.polaroid-card.prev {
+  z-index: 8;
+  transform: translate(-10px, 10px) rotate(-2deg) scale(0.95);
+  filter: brightness(0.9);
+  pointer-events: none;
+}
+
+/* Hidden cards */
+.polaroid-card.hidden {
+  z-index: 5;
+  transform: translate(0, 20px) rotate(0deg) scale(0.9);
+  filter: brightness(0.8);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  /* Desktop: show more cards in the stack */
+  .polaroid-card.next {
+    transform: translate(12px, 12px) rotate(2deg) scale(0.95);
+  }
+
+  .polaroid-card.prev {
+    transform: translate(-12px, 12px) rotate(-2deg) scale(0.95);
+  }
+}
+
+/* Navigation buttons */
+.polaroid-navigation {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  padding: 0 1rem;
+  z-index: 20;
+}
+
+@media (min-width: 768px) {
+  .polaroid-navigation {
+    padding: 0;
+    left: -4rem;
+    right: -4rem;
+  }
+}
+
+.polaroid-nav-button {
+  pointer-events: auto;
+  background: white;
+  border: 2px solid #fbcfe8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.polaroid-nav-button:hover {
+  background: #fce7f3;
+  border-color: #f9a8d4;
+  transform: scale(1.1);
+}
+
+.polaroid-nav-button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile: buttons below the card */
+@media (max-width: 767px) {
+  .polaroid-navigation {
+    position: relative;
+    top: auto;
+    transform: none;
+    margin-top: 1rem;
+    justify-content: center;
+    gap: 1rem;
+  }
+}
+
+/* Dot indicators */
+.polaroid-indicators {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 20;
+}
+
+.polaroid-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.polaroid-dot:hover {
+  background: #9ca3af;
+  transform: scale(1.2);
+}
+
+.polaroid-dot.active {
+  background: #ec4899;
+  width: 24px;
+  border-radius: 5px;
+}
+
+.polaroid-dot:focus-visible {
+  outline: 2px solid #ec4899;
+  outline-offset: 2px;
+}
+
+/* Animation for card transitions */
+@keyframes cardEntry {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.polaroid-card {
+  animation: cardEntry 0.5s ease-out;
+}
