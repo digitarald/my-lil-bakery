@@ -20,9 +20,9 @@ describe("Product Filtering", () => {
     renderWithCart(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
-      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2); // Featured + All products
-      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(3); // Featured front + back + all
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(3); // Featured front + back + all
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(3); // Featured front + back + all
     });
 
     // Find the category select trigger by its text content
@@ -38,12 +38,11 @@ describe("Product Filtering", () => {
       });
 
       await waitFor(() => {
-        // After filtering by cakes, only strawberry shortcake should remain in the products section
-        expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2); // Still featured + filtered
-        // The other products should not be visible in the main products section
+        // After filtering by cakes, strawberry shortcake appears in featured (2x) + filtered (1x)
+        expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(3);
+        // Rainbow cupcakes should still appear in featured section only
         const rainbowCupcakesElements = screen.queryAllByText("Rainbow Cupcakes");
-        // Rainbow cupcakes should not appear in the filtered products section
-        expect(rainbowCupcakesElements.length).toBeLessThanOrEqual(1); // Only in featured if any
+        expect(rainbowCupcakesElements.length).toBe(2); // Only in featured front + back
       });
     }
   })
@@ -52,15 +51,15 @@ describe("Product Filtering", () => {
     renderWithCart(<HomePage />)
 
     await waitFor(() => {
-      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(3); // Featured front + back + all
     });
 
     const searchInput = screen.getByPlaceholderText("Search products...");
     fireEvent.change(searchInput, { target: { value: "chocolate" } })
 
     await waitFor(() => {
-      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
-      expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(0);
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(3); // Featured front + back + filtered
+      expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(2); // Featured front + back only
     })
   })
 
@@ -68,7 +67,7 @@ describe("Product Filtering", () => {
     renderWithCart(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(3); // Featured front + back + all
     });
 
     // Search for "cake"
@@ -76,7 +75,8 @@ describe("Product Filtering", () => {
     fireEvent.change(searchInput, { target: { value: "cake" } });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
+      // Both products with "cake" in the name will match
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(3); // Featured front + back + filtered
     });
   });
 
@@ -84,7 +84,7 @@ describe("Product Filtering", () => {
     renderWithCart(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(3); // Featured front + back + all
     });
 
     const searchInput = screen.getByPlaceholderText("Search products...");
@@ -101,7 +101,7 @@ describe("Product Filtering", () => {
     renderWithCart(<HomePage />);
 
     await waitFor(() => {
-      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(3); // Featured front + back + all
     });
 
     // Apply search filter
@@ -109,17 +109,17 @@ describe("Product Filtering", () => {
     fireEvent.change(searchInput, { target: { value: "chocolate" } });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
-      expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(0);
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(3); // Featured front + back + filtered
+      expect(screen.queryAllByText("Rainbow Cupcakes")).toHaveLength(2); // Featured front + back only
     });
 
     // Clear search
     fireEvent.change(searchInput, { target: { value: "" } });
 
     await waitFor(() => {
-      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(1);
-      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(2);
-      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(1);
+      expect(screen.getAllByText("Rainbow Cupcakes")).toHaveLength(3); // Featured front + back + all
+      expect(screen.getAllByText("Strawberry Shortcake")).toHaveLength(3); // Featured front + back + all
+      expect(screen.getAllByText("Chocolate Chip Cookies")).toHaveLength(3); // Featured front + back + all
     });
   });
 })

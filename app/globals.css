@@ -88,3 +88,151 @@ html {
   outline: 2px solid #ec4899;
   outline-offset: 2px;
 }
+
+/* Auto-flip polaroid animations */
+@keyframes auto-flip-cycle {
+  0%, 45% {
+    transform: rotateY(0deg);
+  }
+  50%, 95% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes idle-rotation {
+  0%, 100% {
+    transform: rotate(var(--rotation-start, -2deg));
+  }
+  50% {
+    transform: rotate(var(--rotation-end, 2deg));
+  }
+}
+
+/* Polaroid grid container */
+.polaroid-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  perspective: 1000px;
+}
+
+@media (min-width: 768px) {
+  .polaroid-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .polaroid-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Polaroid card wrapper */
+.polaroid-wrapper {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+/* Auto-flip animation */
+.auto-flip-card {
+  animation: auto-flip-cycle 8s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+/* Stagger delays for wave effect - target the card within wrapper */
+.polaroid-wrapper:nth-child(1) .auto-flip-card {
+  animation-delay: 0s;
+}
+
+.polaroid-wrapper:nth-child(2) .auto-flip-card {
+  animation-delay: 2s;
+}
+
+.polaroid-wrapper:nth-child(3) .auto-flip-card {
+  animation-delay: 4s;
+}
+
+.polaroid-wrapper:nth-child(4) .auto-flip-card {
+  animation-delay: 6s;
+}
+
+/* Paused state */
+.auto-flip-card.paused {
+  animation-play-state: paused;
+}
+
+/* Hover effects */
+.polaroid-wrapper:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* Card faces */
+.polaroid-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.polaroid-back {
+  transform: rotateY(180deg);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Stagger positioning for visual interest */
+.polaroid-wrapper:nth-child(1) {
+  transform: translateY(0px);
+}
+
+.polaroid-wrapper:nth-child(2) {
+  transform: translateY(20px);
+}
+
+.polaroid-wrapper:nth-child(3) {
+  transform: translateY(10px);
+}
+
+.polaroid-wrapper:nth-child(4) {
+  transform: translateY(30px);
+}
+
+/* Preserve stagger positioning on hover while adding hover effects */
+.polaroid-wrapper:nth-child(1):hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+.polaroid-wrapper:nth-child(2):hover {
+  transform: translateY(12px) scale(1.02);
+}
+
+.polaroid-wrapper:nth-child(3):hover {
+  transform: translateY(2px) scale(1.02);
+}
+
+.polaroid-wrapper:nth-child(4):hover {
+  transform: translateY(22px) scale(1.02);
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .auto-flip-card {
+    animation: none;
+  }
+  
+  .polaroid-wrapper {
+    transition: none;
+  }
+  
+  .polaroid-wrapper:hover {
+    transform: none;
+  }
+}
