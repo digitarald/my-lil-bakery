@@ -14,6 +14,7 @@ import { CartSidebar } from "@/components/cart-sidebar"
 import type { ProductWithCategory } from "@/lib/database"
 import { AuthButton } from "@/components/auth-button";
 import { useSession } from "next-auth/react";
+import { PolaroidCarousel } from "@/components/polaroid-carousel";
 
 export default function HomePage() {
   const { addToCart, cartItems, toggleCart, isCartOpen } = useCart()
@@ -170,7 +171,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products - Polaroid Carousel */}
       <section className="py-16 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
@@ -179,58 +180,18 @@ export default function HomePage() {
             </Badge>
             <h2 className="text-4xl font-bold text-gray-800 mb-4">Our Signature Creations</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Discover our most beloved treats, crafted with premium ingredients and lots of love.
+              Discover our most beloved treats, crafted with premium ingredients and lots of love. 
+              Click each card to flip and see details!
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {loading
-              ? Array.from({ length: 3 }).map((_, i) => (
-                  <Card
-                    key={i}
-                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse"
-                  >
-                    <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
-                    <CardContent className="p-6">
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                      <div className="h-8 bg-gray-200 rounded"></div>
-                    </CardContent>
-                  </Card>
-                ))
-              : featuredProducts.map((product) => (
-                  <Card
-                    key={product.id}
-                    className="bg-white/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
-                  >
-                    <div className="relative overflow-hidden rounded-t-lg">
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        width={300}
-                        height={300}
-                        className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      {product.preOrder && (
-                        <Badge className="absolute top-3 left-3 bg-purple-500 text-white">Pre-Order</Badge>
-                      )}
-                    </div>
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-lg mb-2">{product.name}</h3>
-                      <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-pink-600">${product.price}</span>
-                        <Button
-                          onClick={() => addToCart(product)}
-                          className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700"
-                        >
-                          Add to Cart
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center min-h-[600px]">
+              <div className="animate-pulse text-gray-400">Loading featured products...</div>
+            </div>
+          ) : (
+            <PolaroidCarousel products={featuredProducts} />
+          )}
         </div>
       </section>
 
